@@ -10,7 +10,6 @@ const cardDeck = require('./utils/cardDeck');
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
   ],
 });
 
