@@ -16,14 +16,12 @@ A feature-rich Discord bot that allows users to play the popular card game **UNO
 
 ### Prerequisites
 
-- **Option A (Direct)**: Node.js 18.0 or higher
-- **Option B (Docker)**: Docker and Docker Compose
+- **For Node.js**: Node.js 18.0 or higher
+- **For Docker**: Docker and Docker Compose
 - A Discord account
 - A Discord server to test the bot
 
-### Option A: Running Directly with Node.js
-
-#### Step 1: Create a Discord Application
+### Step 1: Create a Discord Application
 
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
 2. Click on **"New Application"** and give it a name (e.g., "UNO Bot")
@@ -45,15 +43,35 @@ A feature-rich Discord bot that allows users to play the popular card game **UNO
 5. Open the URL in your browser and select your server
 6. Authorize the bot to join your server
 
-### Step 3: Configure the Bot
+### Step 3: Get Your Bot Credentials
+
+Note down the following from your Discord Developer Portal:
+- **Bot Token** (from Step 1)
+- **Client ID** (found in the "General Information" tab)
+- **Guild ID** (your server ID, optional for testing)
+
+You will need these for the next steps.
+
+---
+
+## Installation Options
+
+Choose one of the following methods to run the bot:
+
+### Option A: Running Directly with Node.js
+
+#### Step 4: Clone the repository
 
 1. Clone this repository or download the files
 2. Navigate to the project directory
-3. Create a `.env` file by copying the `.env` file:
+
+#### Step 5: Configure the Bot
+
+1. Create a `.env` file by copying the example:
    ```bash
    cp .env.example .env
    ```
-4. Open `.env` in a text editor and fill in the required values:
+2. Open `.env` in a text editor and fill in the required values:
    ```
    DISCORD_TOKEN=your_bot_token_from_step_1
    CLIENT_ID=your_bot_client_id
@@ -61,13 +79,8 @@ A feature-rich Discord bot that allows users to play the popular card game **UNO
    BOT_NAME=UNO Discord Bot
    BOT_STATUS=Playing UNO with you!
    ```
-   - `DISCORD_TOKEN`: Your bot token from Step 1
-   - `CLIENT_ID`: Found in the "General Information" tab of your Discord application
-   - `GUILD_ID`: Your server ID (optional, for testing commands in a specific server)
-   - `BOT_NAME`: Your bot's display name
-   - `BOT_STATUS`: The status message shown in Discord
 
-### Step 4: Install Dependencies
+#### Step 6: Install Dependencies
 
 Run the following command to install the required packages:
 
@@ -75,7 +88,7 @@ Run the following command to install the required packages:
 npm install
 ```
 
-### Step 5: Start the Bot
+#### Step 7: Start the Bot
 
 Run the bot using:
 
@@ -91,30 +104,26 @@ npm run dev
 
 Your bot should now be online in your Discord server!
 
-## Option B: Running with Docker
+---
 
-### Step 1: Create a Discord Application
+### Option B: Running with Docker
 
-Follow the same steps as Option A to create your Discord application and get your token.
-
-### Step 2: Clone the repository
+#### Step 4: Clone the repository
 
 ```bash
 git clone https://github.com/panic3564/uno-discord-bot.git
 cd uno-discord-bot
 ```
 
-### Step 3: Configure the bot
+#### Step 5: Configure the bot
 
-Create a `.env` file with your configuration:
+1. Create a `.env` file with your configuration:
+   ```bash
+   cp .env.example .env
+   ```
+2. Edit `.env` and add your Discord token and other settings.
 
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and add your Discord token and other settings.
-
-### Step 4: Build and run with Docker Compose
+#### Step 6: Build and run with Docker Compose
 
 ```bash
 docker-compose up -d
@@ -125,35 +134,37 @@ This will:
 - Start the container
 - Run the bot in detached mode
 
-### Step 5: View logs
+#### Step 7: View logs
 
 ```bash
 docker-compose logs -f uno-discord-bot
 ```
 
-### Step 6: Stop the bot
+#### Step 8: Stop the bot
 
 ```bash
 docker-compose down
 ```
 
-### Step 7: Update the bot
+#### Step 9: Update the bot
 
 ```bash
 docker-compose pull && docker-compose up -d
 ```
 
+---
+
 ### Option C: Using Pre-built Docker Images from GHCR
 
 The bot is automatically built and pushed to GitHub Container Registry (GHCR) on every push to main.
 
-#### Pull the latest image:
+#### Step 4: Pull the latest image
 
 ```bash
 docker pull ghcr.io/panic3564/uno-discord-bot:main
 ```
 
-#### Run with Docker:
+#### Step 5: Run with Docker
 
 ```bash
 docker run -d \
@@ -164,12 +175,11 @@ docker run -d \
   ghcr.io/panic3564/uno-discord-bot:main
 ```
 
-#### Or use docker-compose with pre-built image:
+#### Step 6: Or use docker-compose with pre-built image
 
 Create a `docker-compose.yml` file:
 
 ```yaml
-version: '3.8'
 services:
   uno-discord-bot:
     image: ghcr.io/panic3564/uno-discord-bot:main
@@ -205,6 +215,16 @@ All commands start with `/` and are available in any channel where the bot has p
 | `/uno-addbot count:<number>` | Add AI bots to a waiting game |
 | `/uno-removebot count:<number>` | Remove AI bots from a waiting game |
 | `/uno-status` | Check the current game status |
+
+#### Game Action Commands
+
+| Command | Description |
+|---------|-------------|
+| `/uno-hand` | View your current hand (private) |
+| `/uno-play card-number:<number> [color:<color>]` | Play a card from your hand |
+| `/uno-draw` | Draw a card from the deck |
+| `/uno` | Say UNO when you have one card left |
+| `/uno-info` | Display bot information and license |
 
 #### General Commands
 
@@ -275,6 +295,8 @@ uno-discord-bot/
 ├── .env                    # Environment variables (create from .env.example)
 ├── .env.example            # Template for environment variables
 ├── .gitignore              # Files to ignore in git
+├── Dockerfile              # Docker configuration
+├── docker-compose.yml      # Docker Compose configuration
 ├── package.json            # Node.js dependencies and scripts
 ├── README.md               # This file
 ├── config/
@@ -290,7 +312,12 @@ uno-discord-bot/
     │       ├── begin.js    # Begin the game
     │       ├── addbot.js   # Add AI bots
     │       ├── removebot.js # Remove AI bots
-    │       └── status.js   # Check game status
+    │       ├── status.js   # Check game status
+    │       ├── hand.js     # View your hand
+    │       ├── play.js     # Play a card
+    │       ├── draw.js     # Draw a card
+    │       ├── uno.js      # Say UNO
+    │       └── info.js     # Bot information
     ├── events/              # Discord event handlers
     │   ├── ready.js        # Bot ready event
     │   └── interactionCreate.js # Slash command handler
@@ -307,7 +334,7 @@ uno-discord-bot/
 
 - Make sure you've copied the correct token from the Discord Developer Portal
 - Check that your `.env` file has the correct values
-- Ensure Node.js is installed and working
+- Ensure Node.js/Docker is installed and working
 - Check the console for error messages
 
 ### Commands not showing up
@@ -327,7 +354,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the Mozilla Public License Version 2.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **Mozilla Public License Version 2.0** - see the [LICENSE](LICENSE) file for details.
 
 ---
 
