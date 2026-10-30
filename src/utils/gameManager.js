@@ -10,6 +10,7 @@ class GameManager {
     this.games = new Map(); // Map of gameId -> Game instances
     this.pendingGames = new Map(); // Map of guildId -> pending game setup
     this.maxPlayers = 4; // Maximum players per game (including AI)
+    this.gameTimers = new Map(); // Map of gameId -> timer for auto-start
   }
 
   /**
@@ -648,6 +649,116 @@ class GameManager {
       createdAt: game.createdAt,
       lastAction: game.lastAction,
     };
+  }
+
+  /**
+   * Start a timer for auto-starting a game
+   * @param {string} gameId - The game ID
+   * @param {Object} client - Discord client
+   */
+  startGameTimer(gameId, client) {
+    const config = require('../../config/config');
+    const game = this.getGame(gameId);
+    if (!game || game.status !== 'waiting') return;
+
+    // Clear any existing timer
+    if (this.gameTimers.has(gameId)) {
+      clearTimeout(this.gameTimers.get(gameId));
+    }
+
+    // Check if game is already full
+    const totalPlayers = game.players.length + game.bots.length;
+    const maxPlayers = game.options.maxPlayers || this.maxPlayers;
+    
+    if (totalPlayers >= maxPlayers) {
+      // Game is full, start immediately
+      this.startGameAndNotify(gameId, client);
+      return;
+    }
+
+    // Set up timer for auto-start
+    const timer = setTimeout(() => {
+      this.startGameAndNotify(gameId, client);
+    }, config.gameStartTimeout);
+
+    this.gameTimers.set(gameId, timer);
+    console.log(`Game timer started for ${gameId}, will auto-start in ${config.gameStartTimeout / 60000} minutes`);
+  }
+
+  /**
+   * Start the game and notify all participants
+   * @param {string} gameId - The game ID
+   * @param {Object} client - Discord client
+   */
+  async startGameAndNotify(gameId, client) {
+    const game = this.getGame(gameId);
+    if (!game || game.status !== 'waiting') return;
+
+    // Check if game is full
+    const totalPlayers = game.players.length + game.bots.length;
+    const maxPlayers = game.options.maxPlayers || this.maxPlayers;
+    
+    if (totalPlayers < 2) {
+      console.log(`Cannot auto-start game ${gameId}: not enough players (${totalPlayers})`);
+      return;
+    }
+
+    // Start the game
+    const success = this.startGame(gameId);
+    if (!success) {
+      console.log(`Failed to auto-start game ${gameId}`);
+      return;
+    }
+
+    // Clear the timer
+    if (this.gameTimers.has(gameId)) {
+      clearTimeout(this.gameTimers.get(gameId));
+      this.gameTimers.delete(gameId);
+    }
+
+    // Notify in the channel
+    if (game.channelId) {
+      try {
+        const channel = await client.channels.fetch(game.channelId);
+        if (channel) {
+          const allPlayers = this.getAllPlayers(gameId);
+          const playerMentions = allPlayers
+            .filter(p => p.type === 'human')
+            .map(p => `<@${p.id}>`)
+            .join(' ');
+          
+          const topCard = game.discardPile[game.discardPile.length - 1];
+          const currentPlayer = this.getCurrentPlayer(gameId);
+          const currentPlayerMention = currentPlayer && currentPlayer.type === 'human' ? `<@${currentPlayer.id}>` : currentPlayer?.name || 'AI';
+
+          const embed = new (require('discord.js').EmbedBuilder)()
+            .setColor('#00FF00')
+            .setTitle('\ud83c\udfb2 Game Auto-Started!')
+            .setDescription(
+              `Game has started automatically!\n\n` +
+              `${playerMentions}\n\n` +
+              `\ud83c\udccf **Top Card:** ${require('./cardDeck').getCardDisplayName(topCard)}\n` +
+              `\ud83d\udc49 **Current Player:** ${currentPlayerMention}`
+            )
+            .setTimestamp();
+
+          await channel.send({ content: playerMentions, embeds: [embed] });
+        }
+      } catch (error) {
+        console.error(`Error notifying game start for ${gameId}:`, error);
+      }
+    }
+  }
+
+  /**
+   * Cancel a game timer (e.g., when a player joins)
+   * @param {string} gameId - The game ID
+   */
+  cancelGameTimer(gameId) {
+    if (this.gameTimers.has(gameId)) {
+      clearTimeout(this.gameTimers.get(gameId));
+      this.gameTimers.delete(gameId);
+    }
   }
 }
 

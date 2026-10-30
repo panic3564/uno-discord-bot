@@ -126,10 +126,14 @@ module.exports = {
         `👥 **Human Players:** 1/${humanPlayers}\n` +
         `📍 **Channel:** <#${channelId}>\n\n` +
         `Use "/uno-join" to join this game.\n` +
-        `Once all players join, use "/uno-begin" to start!`
+        `Game will auto-start when full or after the timeout.\n` +
+        `Use "/uno-begin" to start early!`
       )
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });
+
+    // Start the game timer for auto-start
+    gameManager.startGameTimer(game.id, interaction.client);
   },
 };

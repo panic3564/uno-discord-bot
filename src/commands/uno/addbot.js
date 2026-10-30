@@ -80,9 +80,14 @@ module.exports = {
         `🤖 **New Bots:** ${botNames}\n` +
         `👥 **Total Players:** ${waitingGame.players.length} humans + ${totalBots} bots = ${totalPlayers + count} total\n` +
         `📍 **Channel:** <#${channelId}>\n\n` +
-        `Use "/uno-begin" to start the game!`
+        `Game will auto-start when full or after the timeout.\n` +
+        `Use "/uno-begin" to start early!`
       )
       .setTimestamp();
+
+    // Cancel existing timer and restart it (game might now be full)
+    gameManager.cancelGameTimer(waitingGame.id);
+    gameManager.startGameTimer(waitingGame.id, interaction.client);
 
     await interaction.reply({ embeds: [embed] });
   },

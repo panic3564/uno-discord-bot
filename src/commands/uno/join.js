@@ -50,6 +50,10 @@ module.exports = {
       return;
     }
 
+    // Cancel existing timer and restart it (game might now be full)
+    gameManager.cancelGameTimer(waitingGame.id);
+    gameManager.startGameTimer(waitingGame.id, interaction.client);
+
     // Check if game is ready to start
     const humanPlayers = waitingGame.players.length;
     const expectedPlayers = waitingGame.options.players || 2;
