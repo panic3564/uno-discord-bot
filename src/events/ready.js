@@ -35,14 +35,14 @@ module.exports = {
     try {
       console.log('Started refreshing application (/) commands.');
 
-      // Always register commands globally
+      // Always register commands globally (PUT replaces all existing commands)
       await rest.put(
         Routes.applicationCommands(clientId),
         { body: commands },
       );
       console.log(`Successfully reloaded ${commands.length} application (/) commands globally.`);
 
-      // If guild ID is provided, also register for that guild (instant)
+      // If guild ID is provided, also register for that guild (PUT replaces all existing guild commands)
       if (guildId) {
         await rest.put(
           Routes.applicationGuildCommands(clientId, guildId),

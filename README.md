@@ -30,6 +30,8 @@ The bot uses the following environment variables:
 | `BOT_NAME` | ❌ No | `UNO Discord Bot` | Bot display name |
 | `BOT_STATUS` | ❌ No | `Playing UNO with you!` | Bot status message |
 
+> **⚠ Important:** On startup, this bot will **overwrite all existing slash commands** for your bot application. This means any slash commands not defined in this repository's `src/commands/` directory will be removed. If you have other bots or commands registered to the same application, they will be deleted. Use a dedicated Discord application for this bot.
+
 ## Setup Guide
 
 ### Prerequisites
