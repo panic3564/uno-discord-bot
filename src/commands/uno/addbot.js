@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const gameManager = require('../../utils/gameManager');
+const unoBot = require('../../utils/unoBot');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -12,12 +13,23 @@ module.exports = {
         .setMaxValue(3)
         .setRequired(true)
     )
+    .addStringOption(option =>
+      option.setName('difficulty')
+        .setDescription('Difficulty level for AI bots')
+        .setRequired(false)
+        .addChoices(
+          { name: 'Easy', value: 'easy' },
+          { name: 'Medium', value: 'medium' },
+          { name: 'Hard', value: 'hard' }
+        )
+    )
     .setDMPermission(false),
   async execute(interaction) {
     const guildId = interaction.guildId;
     const userId = interaction.user.id;
     const channelId = interaction.channelId;
     const count = interaction.options.getInteger('count');
+    const difficulty = interaction.options.getString('difficulty') || 'medium';
 
     // Find waiting games in this channel
     const existingGames = gameManager.getGamesByGuild(guildId);
@@ -47,8 +59,8 @@ module.exports = {
       return;
     }
 
-    // Add bots
-    const newBots = gameManager.addBots(waitingGame.id, count);
+    // Add bots with specified difficulty
+    const newBots = gameManager.addBots(waitingGame.id, count, difficulty);
     
     if (newBots.length === 0) {
       await interaction.reply({
@@ -58,7 +70,7 @@ module.exports = {
       return;
     }
 
-    const botNames = newBots.map(bot => `**${bot.avatar} ${bot.name}**`).join(', ');
+    const botNames = newBots.map(bot => `**${bot.avatar} ${bot.name}** (${unoBot.getDifficultyDisplay(bot.difficulty)})`).join(', ');
     const totalBots = waitingGame.bots.length;
 
     const embed = new EmbedBuilder()

@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const gameManager = require('../../utils/gameManager');
+const unoBot = require('../../utils/unoBot');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -19,10 +20,21 @@ module.exports = {
         .setMaxValue(3)
         .setRequired(false)
     )
+    .addStringOption(option =>
+      option.setName('difficulty')
+        .setDescription('Difficulty level for AI bots')
+        .setRequired(false)
+        .addChoices(
+          { name: 'Easy', value: 'easy' },
+          { name: 'Medium', value: 'medium' },
+          { name: 'Hard', value: 'hard' }
+        )
+    )
     .setDMPermission(false),
   async execute(interaction) {
     const humanPlayers = interaction.options.getInteger('players');
     const botCount = interaction.options.getInteger('bots') || 0;
+    const difficulty = interaction.options.getString('difficulty') || 'medium';
     const guildId = interaction.guildId;
     const userId = interaction.user.id;
     const channelId = interaction.channelId;
@@ -65,6 +77,7 @@ module.exports = {
       maxPlayers: 4,
       createdBy: userId,
       channelId,
+      botDifficulty: difficulty,
     });
 
     // Add the creator as the first player
@@ -72,10 +85,10 @@ module.exports = {
 
     // Add AI bots if requested
     if (botCount > 0) {
-      gameManager.addBots(game.id, botCount);
+      gameManager.addBots(game.id, botCount, difficulty);
     }
 
-    const botNames = game.bots.map(bot => `**${bot.avatar} ${bot.name}**`).join(', ');
+    const botNames = game.bots.map(bot => `**${bot.avatar} ${bot.name}** (${unoBot.getDifficultyDisplay(bot.difficulty)})`).join(', ');
     const humanSlots = humanPlayers - 1; // Creator is already added
 
     const embed = new EmbedBuilder()

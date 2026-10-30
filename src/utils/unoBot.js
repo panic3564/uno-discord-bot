@@ -12,19 +12,47 @@ class UNOBot {
   }
 
   /**
+   * Validate and normalize difficulty level
+   * @param {string} difficulty - Difficulty level
+   * @returns {string} Validated difficulty (easy, medium, or hard)
+   */
+  validateDifficulty(difficulty) {
+    const validDifficulties = ['easy', 'medium', 'hard'];
+    if (validDifficulties.includes(difficulty?.toLowerCase())) {
+      return difficulty.toLowerCase();
+    }
+    return 'medium'; // Default to medium
+  }
+
+  /**
+   * Get difficulty display name with emoji
+   * @param {string} difficulty - Difficulty level
+   * @returns {string} Display name with emoji
+   */
+  getDifficultyDisplay(difficulty) {
+    const displayNames = {
+      easy: '🟢 Easy',
+      medium: '🟡 Medium',
+      hard: '🔴 Hard',
+    };
+    return displayNames[difficulty?.toLowerCase()] || displayNames.medium;
+  }
+
+  /**
    * Create a new AI player
    * @param {string} gameId - The game ID
    * @param {number} botIndex - Index for unique bot naming
+   * @param {string} difficulty - Difficulty level (easy, medium, hard)
    * @returns {Object} AI player object
    */
-  createBot(gameId, botIndex = 0) {
+  createBot(gameId, botIndex = 0, difficulty = 'medium') {
     const nameIndex = botIndex % this.botNames.length;
     return {
       id: `bot-${gameId}-${botIndex}`,
       name: this.botNames[nameIndex],
       avatar: this.botAvatars[nameIndex % this.botAvatars.length],
       type: 'ai',
-      difficulty: 'medium', // easy, medium, hard
+      difficulty: this.validateDifficulty(difficulty),
       cards: [],
       saidUno: false,
       isActive: true,
@@ -33,7 +61,7 @@ class UNOBot {
   }
 
   /**
-   * Get AI difficulty level
+   * Get AI think time based on difficulty
    * @param {string} difficulty - Difficulty level
    * @returns {number} Think time in milliseconds
    */
@@ -54,7 +82,7 @@ class UNOBot {
    * @returns {Object} The move object with action and data
    */
   async makeMove(game, bot, client) {
-    // Simulate thinking time
+    // Simulate thinking time based on difficulty
     await this.delay(this.getThinkTime(bot.difficulty));
 
     const topCard = game.discardPile[game.discardPile.length - 1];
@@ -385,12 +413,13 @@ class UNOBot {
    * Create multiple AI bots for a game
    * @param {string} gameId - The game ID
    * @param {number} count - Number of bots to create
+   * @param {string} difficulty - Difficulty level for all bots (easy, medium, hard)
    * @returns {Array} Array of AI bot objects
    */
-  createBots(gameId, count) {
+  createBots(gameId, count, difficulty = 'medium') {
     const bots = [];
     for (let i = 0; i < count; i++) {
-      bots.push(this.createBot(gameId, i));
+      bots.push(this.createBot(gameId, i, difficulty));
     }
     return bots;
   }
