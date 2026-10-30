@@ -20,6 +20,7 @@ class GameManager {
    * @param {boolean} options.withBots - Whether to include AI bots
    * @param {number} options.botCount - Number of AI bots to add
    * @param {string} options.createdBy - User ID who created the game
+   * @param {boolean} options.withTeams - Whether to use team mode
    * @returns {Object} The created game instance
    */
   createGame(guildId, options) {
@@ -38,8 +39,10 @@ class GameManager {
         maxPlayers: options.maxPlayers || this.maxPlayers,
         withBots: options.withBots || false,
         botCount: options.botCount || 0,
+        withTeams: options.withTeams || false,
         ...options,
       },
+      teams: [], // Team assignments for team mode
       createdBy: options.createdBy || null,
       createdAt: new Date(),
       lastAction: new Date(),
@@ -77,12 +80,14 @@ class GameManager {
     if (gameId) {
       return this.games.get(gameId) || null;
     }
+    
     // Check all games for this guild
     for (const [id, game] of this.games) {
       if (game.guildId === guildId && game.status !== 'finished') {
         return game;
       }
     }
+    
     return null;
   }
 
@@ -108,6 +113,7 @@ class GameManager {
 
     const totalPlayers = game.players.length + game.bots.length;
     const maxPlayers = game.options.maxPlayers || this.maxPlayers;
+    
     if (totalPlayers >= maxPlayers) return false;
     if (game.players.includes(userId)) return false;
 
@@ -136,9 +142,10 @@ class GameManager {
    * Add AI bots to a game
    * @param {string} gameId - The game ID
    * @param {number} count - Number of bots to add
+   * @param {string} difficulty - Difficulty level for bots (easy, medium, hard)
    * @returns {Array} Array of added bot objects
    */
-  addBots(gameId, count) {
+  addBots(gameId, count, difficulty = 'medium') {
     const game = this.getGame(gameId);
     if (!game || game.status !== 'waiting') return [];
 
@@ -148,10 +155,11 @@ class GameManager {
 
     if (botsToAdd <= 0) return [];
 
-    const newBots = unoBot.createBots(game.id, game.bots.length + botsToAdd);
+    const newBots = unoBot.createBots(game.id, game.bots.length + botsToAdd, difficulty);
     game.bots.push(...newBots.slice(0, botsToAdd));
     game.options.withBots = true;
     game.options.botCount = game.bots.length;
+    game.options.botDifficulty = difficulty;
 
     return newBots.slice(0, botsToAdd);
   }
@@ -203,7 +211,128 @@ class GameManager {
       return { isValid: false, message: 'Need at least 1 human player' };
     }
 
+    // Validate team mode
+    if (game.options.withTeams) {
+      if (totalPlayers % 2 !== 0) {
+        return { isValid: false, message: 'Team mode requires an even number of players' };
+      }
+      if (totalPlayers < 4) {
+        return { isValid: false, message: 'Team mode requires at least 4 players' };
+      }
+    }
+
     return { isValid: true, message: 'Game setup is valid' };
+  }
+
+  /**
+   * Assign teams to players
+   * @param {string} gameId - The game ID
+   * @returns {boolean} True if teams were assigned, false otherwise
+   */
+  assignTeams(gameId) {
+    const game = this.getGame(gameId);
+    if (!game || !game.options.withTeams) return false;
+
+    const allPlayers = [...game.players, ...game.bots];
+    const totalPlayers = allPlayers.length;
+
+    // Clear existing teams
+    game.teams = [];
+
+    // Assign alternating teams: A, B, A, B, ...
+    for (let i = 0; i < totalPlayers; i++) {
+      const team = i % 2 === 0 ? 'A' : 'B';
+      game.teams.push({
+        playerId: allPlayers[i].id,
+        team: team,
+      });
+    }
+
+    return true;
+  }
+
+  /**
+   * Get a player's team
+   * @param {string} gameId - The game ID
+   * @param {string} playerId - The player ID
+   * @returns {string|null} Team name (A or B) or null if not in team mode
+   */
+  getPlayerTeam(gameId, playerId) {
+    const game = this.getGame(gameId);
+    if (!game || !game.options.withTeams || !game.teams) return null;
+
+    const teamAssignment = game.teams.find(t => t.playerId === playerId);
+    return teamAssignment ? teamAssignment.team : null;
+  }
+
+  /**
+   * Check if two players are on the same team
+   * @param {string} gameId - The game ID
+   * @param {string} playerId1 - First player ID
+   * @param {string} playerId2 - Second player ID
+   * @returns {boolean} True if players are on the same team
+   */
+  arePlayersOnSameTeam(gameId, playerId1, playerId2) {
+    const team1 = this.getPlayerTeam(gameId, playerId1);
+    const team2 = this.getPlayerTeam(gameId, playerId2);
+    return team1 !== null && team1 === team2;
+  }
+
+  /**
+   * Get all players on the same team as a given player
+   * @param {string} gameId - The game ID
+   * @param {string} playerId - The player ID
+   * @returns {Array} Array of player objects on the same team
+   */
+  getTeammates(gameId, playerId) {
+    const game = this.getGame(gameId);
+    if (!game || !game.options.withTeams || !game.teams) return [];
+
+    const playerTeam = this.getPlayerTeam(gameId, playerId);
+    if (!playerTeam) return [];
+
+    const allPlayers = [...game.players, ...game.bots];
+    const teammates = [];
+
+    for (const teamAssignment of game.teams) {
+      if (teamAssignment.team === playerTeam) {
+        const player = allPlayers.find(p => p.id === teamAssignment.playerId);
+        if (player && player.id !== playerId) {
+          teammates.push(player);
+        }
+      }
+    }
+
+    return teammates;
+  }
+
+  /**
+   * Get team information for display
+   * @param {string} gameId - The game ID
+   * @returns {Object} Team information with team A and team B players
+   */
+  getTeamInfo(gameId) {
+    const game = this.getGame(gameId);
+    if (!game || !game.options.withTeams || !game.teams) {
+      return { teamA: [], teamB: [] };
+    }
+
+    const allPlayers = [...game.players, ...game.bots];
+    const teamA = [];
+    const teamB = [];
+
+    for (const teamAssignment of game.teams) {
+      const player = allPlayers.find(p => p.id === teamAssignment.playerId);
+      if (player) {
+        if (teamAssignment.team === 'A') {
+          teamA.push(player);
+        } else if (teamAssignment.team === 'B') {
+          teamB.push(player);
+        }
+      }
+    }
+
+    return { teamA, teamB };
   }
 
   /**
@@ -223,6 +352,11 @@ class GameManager {
 
     game.status = 'playing';
     game.lastAction = new Date();
+
+    // Assign teams if team mode is enabled
+    if (game.options.withTeams) {
+      this.assignTeams(gameId);
+    }
 
     // Initialize deck
     this.initializeDeck(game);
@@ -256,7 +390,7 @@ class GameManager {
       }
     }
 
-    // Create special cards
+    // Create special cards (4 of each type)
     for (const type of special) {
       for (let i = 0; i < 4; i++) {
         game.deck.push({ color: null, value: null, type });
@@ -285,6 +419,7 @@ class GameManager {
   dealInitialCards(game) {
     const cardsPerPlayer = 7;
     const allPlayers = [...game.players, ...game.bots];
+    
     for (const player of allPlayers) {
       const playerCards = [];
       for (let i = 0; i < cardsPerPlayer; i++) {
@@ -486,22 +621,6 @@ class GameManager {
       createdAt: game.createdAt,
       lastAction: game.lastAction,
     };
-  }
-
-  /**
-   * Get all active games
-   * @returns {Array} Array of all active games
-   */
-  getAllGames() {
-    return Array.from(this.games.values());
-  }
-
-  /**
-   * Get all pending games
-   * @returns {Array} Array of all pending game IDs
-   */
-  getAllPendingGames() {
-    return Array.from(this.pendingGames.values());
   }
 }
 

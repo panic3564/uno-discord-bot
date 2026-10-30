@@ -30,11 +30,17 @@ module.exports = {
           { name: 'Hard', value: 'hard' }
         )
     )
+    .addBooleanOption(option =>
+      option.setName('teams')
+        .setDescription('Enable team mode (requires even number of players, minimum 4)')
+        .setRequired(false)
+    )
     .setDMPermission(false),
   async execute(interaction) {
     const humanPlayers = interaction.options.getInteger('players');
     const botCount = interaction.options.getInteger('bots') || 0;
     const difficulty = interaction.options.getString('difficulty') || 'medium';
+    const withTeams = interaction.options.getBoolean('teams') || false;
     const guildId = interaction.guildId;
     const userId = interaction.user.id;
     const channelId = interaction.channelId;
@@ -69,6 +75,24 @@ module.exports = {
       return;
     }
 
+    // Validate team mode requirements
+    if (withTeams) {
+      if (totalPlayers % 2 !== 0) {
+        await interaction.reply({
+          content: `Team mode requires an even number of players. You requested ${totalPlayers} total players.`,
+          ephemeral: true,
+        });
+        return;
+      }
+      if (totalPlayers < 4) {
+        await interaction.reply({
+          content: `Team mode requires at least 4 players. You requested ${totalPlayers} total players.`,
+          ephemeral: true,
+        });
+        return;
+      }
+    }
+
     // Create the game
     const game = gameManager.createGame(guildId, {
       players: humanPlayers,
@@ -78,6 +102,7 @@ module.exports = {
       createdBy: userId,
       channelId,
       botDifficulty: difficulty,
+      withTeams,
     });
 
     // Add the creator as the first player
@@ -96,6 +121,7 @@ module.exports = {
       .setTitle('🎲 UNO Game Created!')
       .setDescription(`Game ID: **${game.id}**\n\n` +
         `✅ **${interaction.user.tag}** has created a game!\n` +
+        (withTeams ? `👥 **Team Mode: ENABLED** (Teams: A vs B)\n` : '') +
         (botCount > 0 ? `🤖 **AI Bots:** ${botNames}\n` : '') +
         `👥 **Human Players:** 1/${humanPlayers}\n` +
         `📍 **Channel:** <#${channelId}>\n\n` +
