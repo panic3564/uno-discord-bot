@@ -20,15 +20,29 @@ module.exports = {
     // Register slash commands
     const commands = [];
     const commandsPath = path.join(__dirname, '../commands');
-    const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
-    for (const file of commandFiles) {
-      const filePath = path.join(commandsPath, file);
-      const command = require(filePath);
-      if ('data' in command && 'execute' in command) {
-        commands.push(command.data.toJSON());
+    /**
+     * Recursively load commands from directory
+     */
+    function loadCommandsFromDirectory(directory) {
+      const files = fs.readdirSync(directory);
+      
+      for (const file of files) {
+        const filePath = path.join(directory, file);
+        const stat = fs.statSync(filePath);
+        
+        if (stat.isDirectory()) {
+          loadCommandsFromDirectory(filePath);
+        } else if (file.endsWith('.js')) {
+          const command = require(filePath);
+          if ('data' in command && 'execute' in command) {
+            commands.push(command.data.toJSON());
+          }
+        }
       }
     }
+
+    loadCommandsFromDirectory(commandsPath);
 
     const rest = new REST({ version: '10' }).setToken(client.token);
 
