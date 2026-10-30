@@ -16,7 +16,7 @@ A feature-rich Discord bot that allows users to play the popular card game **UNO
 
 ### Prerequisites
 
-- **For Node.js**: Node.js 18.0 or higher
+- **For Node.js**: Node.js 18.0 or higher (recommended: Node.js 20+)
 - **For Docker**: Docker and Docker Compose
 - A Discord account
 - A Discord server to test the bot
