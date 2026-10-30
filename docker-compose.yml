@@ -11,7 +11,6 @@ services:
       - DISCORD_TOKEN=${DISCORD_TOKEN}
       - CLIENT_ID=${CLIENT_ID}
       - GUILD_ID=${GUILD_ID}
-      - PREFIX=${PREFIX:-!}
       - BOT_NAME=${BOT_NAME:-UNO Discord Bot}
       - BOT_STATUS=${BOT_STATUS:-Playing UNO with you!}
     volumes:

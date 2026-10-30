@@ -58,14 +58,12 @@ A feature-rich Discord bot that allows users to play the popular card game **UNO
    DISCORD_TOKEN=your_bot_token_from_step_1
    CLIENT_ID=your_bot_client_id
    GUILD_ID=your_server_id_for_testing
-   PREFIX=!
    BOT_NAME=UNO Discord Bot
    BOT_STATUS=Playing UNO with you!
    ```
    - `DISCORD_TOKEN`: Your bot token from Step 1
    - `CLIENT_ID`: Found in the "General Information" tab of your Discord application
    - `GUILD_ID`: Your server ID (optional, for testing commands in a specific server)
-   - `PREFIX`: The prefix for text commands (default: `!`)
    - `BOT_NAME`: Your bot's display name
    - `BOT_STATUS`: The status message shown in Discord
 
