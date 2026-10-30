@@ -13,14 +13,6 @@ const client = new Client({
   ],
 });
 
-// Set bot presence when ready
-client.on('ready', () => {
-  client.user.setPresence({
-    activities: [{ name: botStatus, type: ActivityType.Playing }],
-    status: 'online',
-  });
-});
-
 // Command handling
 client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'commands');
