@@ -129,7 +129,8 @@ module.exports = {
         .setColor('#FFD700')
         .setTitle('🎉 GAME OVER! 🎉')
         .setDescription(`**${userPlayer.name || userPlayer.id}** wins the game! 🏆`)
-        .setTimestamp();
+        .setFooter({ text: "Licensed under MPL-2.0" })
+      .setTimestamp();
 
       await interaction.reply({ embeds: [embed] });
       return;
@@ -187,6 +188,7 @@ module.exports = {
         { name: 'Cards Left', value: `${userPlayer.cards.length}`, inline: true },
         { name: 'Next Player', value: gameManager.getCurrentPlayer(activeGame.id)?.name || 'Unknown', inline: true }
       )
+      .setFooter({ text: "Licensed under MPL-2.0" })
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });

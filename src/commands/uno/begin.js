@@ -68,6 +68,7 @@ module.exports = {
         `**Players:**\n${playerList}\n\n` +
         `Current turn: <@${allPlayers[game.currentPlayer]?.id}> or ${allPlayers[game.currentPlayer]?.name}`
       )
+      .setFooter({ text: "Licensed under MPL-2.0" })
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });

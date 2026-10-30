@@ -67,6 +67,7 @@ module.exports = {
           `⏳ **Waiting for more players...** (${expectedPlayers - humanPlayers} more needed)`
         )
       )
+      .setFooter({ text: "Licensed under MPL-2.0" })
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });

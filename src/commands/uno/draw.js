@@ -89,6 +89,7 @@ module.exports = {
         { name: 'Cards Left', value: `${userPlayer.cards.length}`, inline: true },
         { name: 'Playable?', value: isPlayable ? '✅ Yes! You can play this card.' : '❌ No', inline: true }
       )
+      .setFooter({ text: "Licensed under MPL-2.0" })
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed], ephemeral: true });

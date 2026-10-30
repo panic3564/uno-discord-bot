@@ -17,6 +17,7 @@ module.exports = {
       .setColor('#0099ff')
       .setTitle('Available Commands')
       .setDescription('Here are all the commands you can use:')
+      .setFooter({ text: "Licensed under MPL-2.0" })
       .setTimestamp();
 
     commands.forEach(cmd => {

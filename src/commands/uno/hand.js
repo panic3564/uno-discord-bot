@@ -47,11 +47,14 @@ module.exports = {
       return `${index + 1}. ${emoji} **${displayName}**`;
     }).join('\n');
 
+    const isYourTurn = activeGame.currentPlayer === allPlayers.indexOf(userPlayer);
+
     const embed = new EmbedBuilder()
       .setColor('#00FF00')
       .setTitle(`🃏 Your Hand (${userPlayer.cards.length} cards)`)
       .setDescription(cardList)
-      .setFooter({ text: `Game: ${activeGame.id} | Your turn: ${activeGame.currentPlayer === allPlayers.indexOf(userPlayer) ? '✅ YES' : '❌ No'}` });
+      .setFooter({ text: `Game: ${activeGame.id} | Your turn: ${isYourTurn ? '✅ YES' : '❌ No'} | Licensed under MPL-2.0` })
+      .setTimestamp();
 
     await interaction.reply({ embeds: [embed], ephemeral: true });
   },
