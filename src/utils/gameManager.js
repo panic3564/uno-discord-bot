@@ -4,6 +4,7 @@
  */
 
 const unoBot = require('./unoBot');
+const cardDeck = require('./cardDeck');
 
 class GameManager {
   constructor() {
