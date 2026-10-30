@@ -51,7 +51,6 @@ module.exports = {
           `🎮 **Game in progress!** Current turn: ${currentPlayer?.name || currentPlayer?.id || 'Unknown'}`
         )
       )
-      .setFooter({ text: "Licensed under MPL-2.0" })
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });

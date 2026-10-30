@@ -70,7 +70,6 @@ module.exports = {
         `📍 **Channel:** <#${channelId}>\n\n` +
         `Use "/uno-begin" to start the game!`
       )
-      .setFooter({ text: "Licensed under MPL-2.0" })
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });

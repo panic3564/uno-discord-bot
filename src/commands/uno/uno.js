@@ -63,7 +63,6 @@ module.exports = {
       .setColor('#FFFF00')
       .setTitle('🟡 UNO!')
       .setDescription(`**${userPlayer.name || userPlayer.id}** said UNO! They have 1 card left.`) 
-      .setFooter({ text: "Licensed under MPL-2.0" })
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });

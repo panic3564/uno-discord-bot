@@ -89,7 +89,6 @@ module.exports = {
         `Use "/uno-join" to join this game.\n` +
         `Once all players join, use "/uno-begin" to start!`
       )
-      .setFooter({ text: "Licensed under MPL-2.0" })
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });
