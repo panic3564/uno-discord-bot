@@ -345,8 +345,6 @@ uno-discord-bot/
 
 ### Bot can't see messages
 
-- Make sure the bot has the "Message Content Intent" enabled in the Discord Developer Portal
-- Go to your bot settings and enable "Message Content Intent"
 
 ## Contributing
 
