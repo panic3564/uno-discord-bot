@@ -77,14 +77,12 @@ class GameManager {
     if (gameId) {
       return this.games.get(gameId) || null;
     }
-    
     // Check all games for this guild
     for (const [id, game] of this.games) {
       if (game.guildId === guildId && game.status !== 'finished') {
         return game;
       }
     }
-    
     return null;
   }
 
@@ -110,7 +108,6 @@ class GameManager {
 
     const totalPlayers = game.players.length + game.bots.length;
     const maxPlayers = game.options.maxPlayers || this.maxPlayers;
-    
     if (totalPlayers >= maxPlayers) return false;
     if (game.players.includes(userId)) return false;
 
@@ -224,7 +221,6 @@ class GameManager {
       return false;
     }
 
-    // TODO: Initialize deck, deal cards, etc.
     game.status = 'playing';
     game.lastAction = new Date();
 
@@ -289,7 +285,6 @@ class GameManager {
   dealInitialCards(game) {
     const cardsPerPlayer = 7;
     const allPlayers = [...game.players, ...game.bots];
-    
     for (const player of allPlayers) {
       const playerCards = [];
       for (let i = 0; i < cardsPerPlayer; i++) {
@@ -299,6 +294,8 @@ class GameManager {
         }
       }
       player.cards = playerCards;
+      player.saidUno = false;
+      player.wasCalledOut = false;
     }
   }
 
