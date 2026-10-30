@@ -16,11 +16,14 @@ A feature-rich Discord bot that allows users to play the popular card game **UNO
 
 ### Prerequisites
 
-- Node.js 18.0 or higher
+- **Option A (Direct)**: Node.js 18.0 or higher
+- **Option B (Docker)**: Docker and Docker Compose
 - A Discord account
 - A Discord server to test the bot
 
-### Step 1: Create a Discord Application
+### Option A: Running Directly with Node.js
+
+#### Step 1: Create a Discord Application
 
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
 2. Click on **"New Application"** and give it a name (e.g., "UNO Bot")
@@ -89,6 +92,104 @@ npm run dev
 ```
 
 Your bot should now be online in your Discord server!
+
+## Option B: Running with Docker
+
+### Step 1: Create a Discord Application
+
+Follow the same steps as Option A to create your Discord application and get your token.
+
+### Step 2: Clone the repository
+
+```bash
+git clone https://github.com/panic3564/uno-discord-bot.git
+cd uno-discord-bot
+```
+
+### Step 3: Configure the bot
+
+Create a `.env` file with your configuration:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and add your Discord token and other settings.
+
+### Step 4: Build and run with Docker Compose
+
+```bash
+docker-compose up -d
+```
+
+This will:
+- Build the Docker image
+- Start the container
+- Run the bot in detached mode
+
+### Step 5: View logs
+
+```bash
+docker-compose logs -f uno-discord-bot
+```
+
+### Step 6: Stop the bot
+
+```bash
+docker-compose down
+```
+
+### Step 7: Update the bot
+
+```bash
+docker-compose pull && docker-compose up -d
+```
+
+### Option C: Using Pre-built Docker Images from GHCR
+
+The bot is automatically built and pushed to GitHub Container Registry (GHCR) on every push to main.
+
+#### Pull the latest image:
+
+```bash
+docker pull ghcr.io/panic3564/uno-discord-bot:main
+```
+
+#### Run with Docker:
+
+```bash
+docker run -d \
+  --name uno-discord-bot \
+  -e DISCORD_TOKEN=your_token_here \
+  -e CLIENT_ID=your_client_id \
+  -e GUILD_ID=your_guild_id \
+  ghcr.io/panic3564/uno-discord-bot:main
+```
+
+#### Or use docker-compose with pre-built image:
+
+Create a `docker-compose.yml` file:
+
+```yaml
+version: '3.8'
+services:
+  uno-discord-bot:
+    image: ghcr.io/panic3564/uno-discord-bot:main
+    container_name: uno-discord-bot
+    restart: unless-stopped
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - CLIENT_ID=${CLIENT_ID}
+      - GUILD_ID=${GUILD_ID}
+    volumes:
+      - ./logs:/app/logs
+```
+
+Then run:
+
+```bash
+docker-compose up -d
+```
 
 ## Usage
 
