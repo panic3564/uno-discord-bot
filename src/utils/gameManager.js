@@ -3,24 +3,30 @@
  * Manages active UNO games and their state
  */
 
+const unoBot = require('./unoBot');
+
 class GameManager {
   constructor() {
-    this.games = new Map(); // Map of guildId -> Game instances
+    this.games = new Map(); // Map of gameId -> Game instances
     this.pendingGames = new Map(); // Map of guildId -> pending game setup
+    this.maxPlayers = 4; // Maximum players per game (including AI)
   }
 
   /**
    * Create a new UNO game
    * @param {string} guildId - The guild ID where the game is being created
    * @param {Object} options - Game options
-   * @param {number} options.players - Number of players
+   * @param {number} options.players - Number of human players
    * @param {boolean} options.withBots - Whether to include AI bots
+   * @param {number} options.botCount - Number of AI bots to add
+   * @param {string} options.createdBy - User ID who created the game
    * @returns {Object} The created game instance
    */
   createGame(guildId, options) {
     const game = {
       id: `${guildId}-${Date.now()}`,
       guildId,
+      channelId: options.channelId || null,
       players: [],
       bots: [],
       deck: [],
@@ -28,10 +34,23 @@ class GameManager {
       currentPlayer: 0,
       direction: 1, // 1 for clockwise, -1 for counter-clockwise
       status: 'waiting', // waiting, playing, finished
-      options,
+      options: {
+        maxPlayers: options.maxPlayers || this.maxPlayers,
+        withBots: options.withBots || false,
+        botCount: options.botCount || 0,
+        ...options,
+      },
+      createdBy: options.createdBy || null,
       createdAt: new Date(),
       lastAction: new Date(),
+      turnTimeout: 30000, // 30 seconds per turn
     };
+
+    // Add AI bots if requested
+    if (game.options.withBots && game.options.botCount > 0) {
+      const bots = unoBot.createBots(game.id, game.options.botCount);
+      game.bots = bots;
+    }
 
     this.games.set(game.id, game);
     this.pendingGames.set(guildId, game.id);
@@ -61,12 +80,22 @@ class GameManager {
     
     // Check all games for this guild
     for (const [id, game] of this.games) {
-      if (game.guildId === guildId && game.status === 'playing') {
+      if (game.guildId === guildId && game.status !== 'finished') {
         return game;
       }
     }
     
     return null;
+  }
+
+  /**
+   * Get all games in a guild
+   * @param {string} guildId - The guild ID
+   * @returns {Array} Array of game instances
+   */
+  getGamesByGuild(guildId) {
+    return Array.from(this.games.values())
+      .filter(game => game.guildId === guildId && game.status !== 'finished');
   }
 
   /**
@@ -79,7 +108,10 @@ class GameManager {
     const game = this.getGame(gameId);
     if (!game || game.status !== 'waiting') return false;
 
-    if (game.players.length >= game.options.players) return false;
+    const totalPlayers = game.players.length + game.bots.length;
+    const maxPlayers = game.options.maxPlayers || this.maxPlayers;
+    
+    if (totalPlayers >= maxPlayers) return false;
     if (game.players.includes(userId)) return false;
 
     game.players.push(userId);
@@ -104,6 +136,80 @@ class GameManager {
   }
 
   /**
+   * Add AI bots to a game
+   * @param {string} gameId - The game ID
+   * @param {number} count - Number of bots to add
+   * @returns {Array} Array of added bot objects
+   */
+  addBots(gameId, count) {
+    const game = this.getGame(gameId);
+    if (!game || game.status !== 'waiting') return [];
+
+    const totalPlayers = game.players.length + game.bots.length;
+    const maxPlayers = game.options.maxPlayers || this.maxPlayers;
+    const botsToAdd = Math.min(count, maxPlayers - totalPlayers);
+
+    if (botsToAdd <= 0) return [];
+
+    const newBots = unoBot.createBots(game.id, game.bots.length + botsToAdd);
+    game.bots.push(...newBots.slice(0, botsToAdd));
+    game.options.withBots = true;
+    game.options.botCount = game.bots.length;
+
+    return newBots.slice(0, botsToAdd);
+  }
+
+  /**
+   * Remove AI bots from a game
+   * @param {string} gameId - The game ID
+   * @param {number} count - Number of bots to remove
+   * @returns {Array} Array of removed bot objects
+   */
+  removeBots(gameId, count) {
+    const game = this.getGame(gameId);
+    if (!game || game.status !== 'waiting') return [];
+
+    const botsToRemove = Math.min(count, game.bots.length);
+    if (botsToRemove <= 0) return [];
+
+    const removedBots = game.bots.splice(-botsToRemove, botsToRemove);
+    game.options.botCount = game.bots.length;
+
+    if (game.bots.length === 0) {
+      game.options.withBots = false;
+    }
+
+    return removedBots;
+  }
+
+  /**
+   * Validate game setup before starting
+   * @param {string} gameId - The game ID
+   * @returns {Object} Validation result with isValid and message
+   */
+  validateGameSetup(gameId) {
+    const game = this.getGame(gameId);
+    if (!game) {
+      return { isValid: false, message: 'Game not found' };
+    }
+
+    const totalPlayers = game.players.length + game.bots.length;
+    if (totalPlayers < 2) {
+      return { isValid: false, message: 'Need at least 2 players to start' };
+    }
+
+    if (totalPlayers > (game.options.maxPlayers || this.maxPlayers)) {
+      return { isValid: false, message: `Maximum ${game.options.maxPlayers || this.maxPlayers} players allowed` };
+    }
+
+    if (game.players.length === 0) {
+      return { isValid: false, message: 'Need at least 1 human player' };
+    }
+
+    return { isValid: true, message: 'Game setup is valid' };
+  }
+
+  /**
    * Start a game
    * @param {string} gameId - The game ID
    * @returns {boolean} True if game was started, false otherwise
@@ -111,6 +217,12 @@ class GameManager {
   startGame(gameId) {
     const game = this.getGame(gameId);
     if (!game || game.status !== 'waiting') return false;
+
+    const validation = this.validateGameSetup(gameId);
+    if (!validation.isValid) {
+      console.log(`Cannot start game: ${validation.message}`);
+      return false;
+    }
 
     // TODO: Initialize deck, deal cards, etc.
     game.status = 'playing';
@@ -171,13 +283,14 @@ class GameManager {
   }
 
   /**
-   * Deal initial cards to players
+   * Deal initial cards to players and bots
    * @param {Object} game - The game instance
    */
   dealInitialCards(game) {
     const cardsPerPlayer = 7;
+    const allPlayers = [...game.players, ...game.bots];
     
-    for (const playerId of game.players) {
+    for (const player of allPlayers) {
       const playerCards = [];
       for (let i = 0; i < cardsPerPlayer; i++) {
         if (game.deck.length > 0) {
@@ -185,7 +298,7 @@ class GameManager {
           playerCards.push(card);
         }
       }
-      // In a real implementation, you'd store this in a player object
+      player.cards = playerCards;
     }
   }
 
@@ -226,6 +339,156 @@ class GameManager {
     }, 3600000); // 1 hour
 
     return true;
+  }
+
+  /**
+   * Process AI turn
+   * @param {string} gameId - The game ID
+   * @param {Object} client - Discord client for sending messages
+   * @returns {Promise<Object>} The move made by the AI
+   */
+  async processAITurn(gameId, client) {
+    const game = this.getGame(gameId);
+    if (!game || game.status !== 'playing') return null;
+
+    const currentPlayerIndex = game.currentPlayer;
+    const allPlayers = [...game.players, ...game.bots];
+    const currentPlayer = allPlayers[currentPlayerIndex];
+
+    // If current player is not a bot, don't process
+    if (!currentPlayer || currentPlayer.type !== 'ai') return null;
+
+    // Get the bot's move
+    const move = await unoBot.makeMove(game, currentPlayer, client);
+
+    // Process the move
+    if (move.action === 'play') {
+      const { card, color } = move.data;
+      
+      // Remove card from bot's hand
+      const cardIndex = currentPlayer.cards.findIndex(c => 
+        c.id === card.id || (c.color === card.color && c.value === card.value && c.type === card.type)
+      );
+      
+      if (cardIndex !== -1) {
+        currentPlayer.cards.splice(cardIndex, 1);
+      }
+
+      // If it's a wild card, set the chosen color
+      if (card.type === 'wild' || card.type === 'wild4') {
+        card.color = color;
+      }
+
+      // Add card to discard pile
+      game.discardPile.push(card);
+
+      // Check if bot has one card left
+      if (currentPlayer.cards.length === 1) {
+        currentPlayer.saidUno = true;
+      }
+
+      // Check if bot won
+      if (currentPlayer.cards.length === 0) {
+        game.status = 'finished';
+        game.winner = currentPlayer;
+        return { action: 'win', data: { player: currentPlayer } };
+      }
+
+      // Move to next player
+      this.moveToNextPlayer(game);
+
+      return { action: 'play', data: { card, player: currentPlayer } };
+    }
+
+    if (move.action === 'draw') {
+      // Draw a card
+      const card = cardDeck.drawCard(game.deck, game.discardPile);
+      if (card) {
+        currentPlayer.cards.push(card);
+      }
+
+      // Move to next player (bot couldn't play)
+      this.moveToNextPlayer(game);
+
+      return { action: 'draw', data: { card, player: currentPlayer } };
+    }
+
+    return null;
+  }
+
+  /**
+   * Move to the next player
+   * @param {Object} game - The game instance
+   */
+  moveToNextPlayer(game) {
+    const allPlayers = [...game.players, ...game.bots];
+    game.currentPlayer = (game.currentPlayer + game.direction) % allPlayers.length;
+    if (game.currentPlayer < 0) {
+      game.currentPlayer += allPlayers.length;
+    }
+    game.lastAction = new Date();
+  }
+
+  /**
+   * Get current player
+   * @param {string} gameId - The game ID
+   * @returns {Object|null} Current player object or null
+   */
+  getCurrentPlayer(gameId) {
+    const game = this.getGame(gameId);
+    if (!game) return null;
+
+    const allPlayers = [...game.players, ...game.bots];
+    return allPlayers[game.currentPlayer] || null;
+  }
+
+  /**
+   * Get all players (human and AI)
+   * @param {string} gameId - The game ID
+   * @returns {Array} Array of all player objects
+   */
+  getAllPlayers(gameId) {
+    const game = this.getGame(gameId);
+    if (!game) return [];
+
+    return [...game.players, ...game.bots];
+  }
+
+  /**
+   * Get game state for display
+   * @param {string} gameId - The game ID
+   * @returns {Object} Game state for display
+   */
+  getGameState(gameId) {
+    const game = this.getGame(gameId);
+    if (!game) return null;
+
+    const allPlayers = this.getAllPlayers(gameId);
+    const currentPlayer = this.getCurrentPlayer(gameId);
+    const topCard = game.discardPile[game.discardPile.length - 1];
+
+    return {
+      id: game.id,
+      status: game.status,
+      currentPlayer: currentPlayer ? {
+        id: currentPlayer.id,
+        name: currentPlayer.name || `Player ${game.players.indexOf(currentPlayer.id) + 1}`,
+        type: currentPlayer.type || 'human',
+        cardCount: currentPlayer.cards ? currentPlayer.cards.length : 0,
+      } : null,
+      players: allPlayers.map(p => ({
+        id: p.id,
+        name: p.name || `Player ${game.players.indexOf(p.id) + 1}`,
+        type: p.type || 'human',
+        cardCount: p.cards ? p.cards.length : 0,
+        isBot: p.type === 'ai',
+        avatar: p.avatar || null,
+      })),
+      topCard: topCard || null,
+      direction: game.direction,
+      createdAt: game.createdAt,
+      lastAction: game.lastAction,
+    };
   }
 
   /**
