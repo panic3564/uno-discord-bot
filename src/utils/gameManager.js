@@ -427,7 +427,22 @@ class GameManager {
    */
   dealInitialCards(game) {
     const cardsPerPlayer = 7;
-    const allPlayers = [...game.players, ...game.bots];
+    
+    // Convert string player IDs to player objects
+    const normalizedPlayers = game.players.map(userId => {
+      if (typeof userId === 'string') {
+        return {
+          id: userId,
+          type: 'human',
+          cards: [],
+          saidUno: false,
+          wasCalledOut: false,
+        };
+      }
+      return userId;
+    });
+    
+    const allPlayers = [...normalizedPlayers, ...game.bots];
     
     for (const player of allPlayers) {
       const playerCards = [];
@@ -441,6 +456,9 @@ class GameManager {
       player.saidUno = false;
       player.wasCalledOut = false;
     }
+    
+    // Update the game's players array with the normalized objects
+    game.players = normalizedPlayers;
   }
 
   /**
