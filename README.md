@@ -343,9 +343,6 @@ uno-discord-bot/
 - Or specify a `GUILD_ID` in your `.env` file for instant testing in that server
 - Make sure the bot has the "Use Slash Commands" permission
 
-### Bot can't see messages
-
-
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
