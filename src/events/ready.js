@@ -35,20 +35,20 @@ module.exports = {
     try {
       console.log('Started refreshing application (/) commands.');
 
+      // Always register commands globally
+      await rest.put(
+        Routes.applicationCommands(clientId),
+        { body: commands },
+      );
+      console.log(`Successfully reloaded ${commands.length} application (/) commands globally.`);
+
+      // If guild ID is provided, also register for that guild (instant)
       if (guildId) {
-        // Register commands for specific guild (instant)
         await rest.put(
           Routes.applicationGuildCommands(clientId, guildId),
           { body: commands },
         );
         console.log(`Successfully reloaded ${commands.length} application (/) commands for guild ${guildId}.`);
-      } else {
-        // Register commands globally (can take up to 1 hour)
-        await rest.put(
-          Routes.applicationCommands(clientId),
-          { body: commands },
-        );
-        console.log(`Successfully reloaded ${commands.length} application (/) commands globally.`);
       }
     } catch (error) {
       console.error('Error registering commands:', error);
