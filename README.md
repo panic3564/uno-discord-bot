@@ -16,6 +16,20 @@ A feature-rich Discord bot that allows users to play the popular card game **UNO
 - ✅ UNO call-out feature with 2-card penalty
 - ✅ Docker support with automatic builds
 
+## Configuration
+
+### Environment Variables
+
+The bot uses the following environment variables:
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `DISCORD_TOKEN` | ✅ Yes | - | Your Discord bot token from the Developer Portal |
+| `CLIENT_ID` | ✅ Yes | - | Your bot's Client ID from the Developer Portal |
+| `GUILD_ID` | ❌ No | - | Server ID for testing slash commands (optional) |
+| `BOT_NAME` | ❌ No | `UNO Discord Bot` | Bot display name |
+| `BOT_STATUS` | ❌ No | `Playing UNO with you!` | Bot status message |
+
 ## Setup Guide
 
 ### Prerequisites
@@ -176,6 +190,8 @@ docker run -d \
   -e DISCORD_TOKEN=your_token_here \
   -e CLIENT_ID=your_client_id \
   -e GUILD_ID=your_guild_id \
+  -e BOT_NAME="UNO Discord Bot" \
+  -e BOT_STATUS="Playing UNO with you!" \
   ghcr.io/panic3564/uno-discord-bot:main
 ```
 
@@ -193,6 +209,8 @@ services:
       - DISCORD_TOKEN=${DISCORD_TOKEN}
       - CLIENT_ID=${CLIENT_ID}
       - GUILD_ID=${GUILD_ID}
+      - BOT_NAME=${BOT_NAME:-UNO Discord Bot}
+      - BOT_STATUS=${BOT_STATUS:-Playing UNO with you!}
     volumes:
       - ./logs:/app/logs
 ```
