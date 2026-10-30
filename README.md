@@ -5,12 +5,16 @@ A feature-rich Discord bot that allows users to play the popular card game **UNO
 ## Features
 
 - ✅ Play UNO with friends in Discord
-- ✅ Play against AI opponents with different difficulty levels
+- ✅ Play against AI opponents with different difficulty levels (Easy, Medium, Hard)
 - ✅ Mix of human players and AI bots (up to 4 players total)
 - ✅ Support for all UNO special cards (Skip, Reverse, Draw 2, Wild, Wild Draw 4)
 - ✅ Automatic turn management
 - ✅ Real-time game status updates
 - ✅ Easy-to-use slash commands
+- ✅ Team mode with alternating teams (A vs B)
+- ✅ Teammates can view each other's hands
+- ✅ UNO call-out feature with 2-card penalty
+- ✅ Docker support with automatic builds
 
 ## Setup Guide
 
@@ -199,6 +203,8 @@ Then run:
 docker-compose up -d
 ```
 
+---
+
 ## Usage
 
 ### Slash Commands
@@ -209,10 +215,10 @@ All commands start with `/` and are available in any channel where the bot has p
 
 | Command | Description |
 |---------|-------------|
-| `/uno-start players:<number> [bots:<number>]` | Create a new UNO game with human players and optional AI bots |
+| `/uno-start players:<number> [bots:<number>] [difficulty:<easy/medium/hard>] [teams:<true/false>]` | Create a new UNO game with human players and optional AI bots |
 | `/uno-join` | Join an existing waiting game |
 | `/uno-begin` | Start the game once all players are ready |
-| `/uno-addbot count:<number>` | Add AI bots to a waiting game |
+| `/uno-addbot count:<number> [difficulty:<easy/medium/hard>]` | Add AI bots to a waiting game |
 | `/uno-removebot count:<number>` | Remove AI bots from a waiting game |
 | `/uno-status` | Check the current game status |
 
@@ -220,10 +226,11 @@ All commands start with `/` and are available in any channel where the bot has p
 
 | Command | Description |
 |---------|-------------|
-| `/uno-hand` | View your current hand (private) |
-| `/uno-play card-number:<number> [color:<color>]` | Play a card from your hand |
+| `/uno-hand [player:<@teammate>]` | View your current hand or a teammate's hand (in team mode) |
+| `/uno-play card-number:<number> [color:<red/blue/green/yellow>]` | Play a card from your hand |
 | `/uno-draw` | Draw a card from the deck |
 | `/uno` | Say UNO when you have one card left |
+| `/uno-calluno player:<@player>` | Call out a player who forgot to say UNO |
 | `/uno-info` | Display bot information and license |
 
 #### General Commands
@@ -245,23 +252,44 @@ Creates a game for 4 human players. Players can join using `/uno-join`, then sta
 #### Starting a Game with AI
 
 ```
-/uno-start players:2 bots:2
+/uno-start players:2 bots:2 difficulty:hard
 ```
-Creates a game with 2 human players and 2 AI opponents.
+Creates a game with 2 human players and 2 Hard AI opponents.
+
+#### Starting a Team Game
+
+```
+/uno-start players:4 teams:true
+```
+Creates a 4-player game with alternating teams (A vs B).
 
 #### Adding AI to an Existing Game
 
 ```
-/uno-addbot count:1
+/uno-addbot count:1 difficulty:easy
 ```
-Adds 1 AI bot to your waiting game.
+Adds 1 Easy AI bot to your waiting game.
+
+#### Viewing a Teammate's Hand
+
+```
+/uno-hand player:@Charlie
+```
+In team mode, view your teammate Charlie's hand.
+
+#### Calling Out a Player
+
+```
+/uno-calluno player:@Bob
+```
+Call out Bob for forgetting to say UNO (2-card penalty).
 
 #### Checking Game Status
 
 ```
 /uno-status
 ```
-Shows the current game state, including players, card counts, and the top card.
+Shows the current game state, including players, card counts, teams, and the top card.
 
 ## Game Rules
 
@@ -276,57 +304,34 @@ The bot follows standard UNO rules:
   - **Wild**: Choose any color (including the current one)
   - **Wild Draw 4**: Choose any color, next player draws 4 cards and loses their turn
 - When a player has one card left, they must say "UNO"
+- If a player forgets to say UNO, the next player can call them out with `/uno-calluno` (2-card penalty)
 - First player to get rid of all their cards wins!
+
+## Team Mode
+
+When team mode is enabled:
+
+- Players are automatically assigned to alternating teams (A vs B)
+- **Example with 4 players**: Player 1 → Team A, Player 2 → Team B, Player 3 → Team A, Player 4 → Team B
+- Teammates can view each other's hands using `/uno-hand player:@teammate`
+- Requires an even number of players (minimum 4)
+- Teams cannot be adjacent (always separated by opponents)
 
 ## AI Difficulty Levels
 
 The AI opponents have different difficulty levels:
 
-- **Easy**: Plays the first available card
-- **Medium**: Prioritizes special cards and strategic plays
-- **Hard**: Avoids helping opponents, makes smart color choices
+- **🟢 Easy**: Plays the first available card
+- **🟡 Medium**: Prioritizes special cards and strategic plays
+- **🔴 Hard**: Avoids helping opponents, makes smart color choices
 
-Currently, all AI bots use Medium difficulty, but this can be customized in the code.
-
-## Project Structure
-
+Choose the difficulty when starting a game or adding bots:
 ```
-uno-discord-bot/
-├── .env                    # Environment variables (create from .env.example)
-├── .env.example            # Template for environment variables
-├── .gitignore              # Files to ignore in git
-├── Dockerfile              # Docker configuration
-├── docker-compose.yml      # Docker Compose configuration
-├── package.json            # Node.js dependencies and scripts
-├── README.md               # This file
-├── config/
-│   └── config.js           # Bot configuration loader
-└── src/
-    ├── index.js            # Main bot entry point
-    ├── commands/           # Slash commands
-    │   ├── help.js         # Help command
-    │   ├── ping.js         # Ping command
-    │   └── uno/            # UNO game commands
-    │       ├── start.js    # Start a new game
-    │       ├── join.js     # Join a game
-    │       ├── begin.js    # Begin the game
-    │       ├── addbot.js   # Add AI bots
-    │       ├── removebot.js # Remove AI bots
-    │       ├── status.js   # Check game status
-    │       ├── hand.js     # View your hand
-    │       ├── play.js     # Play a card
-    │       ├── draw.js     # Draw a card
-    │       ├── uno.js      # Say UNO
-    │       └── info.js     # Bot information
-    ├── events/              # Discord event handlers
-    │   ├── ready.js        # Bot ready event
-    │   └── interactionCreate.js # Slash command handler
-    └── utils/               # Utility functions
-        ├── logger.js       # Logging utility
-        ├── gameManager.js  # Game state manager
-        ├── cardDeck.js     # Card deck utilities
-        └── unoBot.js       # AI bot logic
+/uno-start players:2 bots:2 difficulty:hard
+/uno-addbot count:1 difficulty:easy
 ```
+
+---
 
 ## Troubleshooting
 
