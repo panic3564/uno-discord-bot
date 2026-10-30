@@ -73,25 +73,31 @@ module.exports = {
       return;
     }
 
-    // Check if the caller is the next player (only next player can call UNO)
+    // Check if it's the current player's turn to call out
+    // In UNO, the next player in turn order is the one who can call out
     const currentPlayer = gameManager.getCurrentPlayer(activeGame.id);
     const currentPlayerIndex = allPlayers.findIndex(p => p.id === currentPlayer?.id);
     const callerIndex = allPlayers.findIndex(p => p.id === userId);
-    const calledPlayerIndex = allPlayers.findIndex(p => p.id === calledPlayer.id);
 
-    // The player can only be called out by the next player in turn order
-    // In UNO, anyone can call out a player who forgot to say UNO
-    // But traditionally, the next player in turn order is the one who notices
-    // For this implementation, we'll allow any player to call out
+    // Only the current player (whose turn it is) can call out someone for not saying UNO
+    if (callerIndex !== currentPlayerIndex) {
+      await interaction.reply({
+        content: `It's not your turn! Only the current player (${currentPlayer?.name || currentPlayer?.id || 'Unknown'}) can call out someone for not saying UNO.`,
+        ephemeral: true,
+      });
+      return;
+    }
 
     // Mark that the player was caught
     calledPlayerObj.saidUno = true; // Mark as caught (they said it, but too late)
     calledPlayerObj.wasCalledOut = true; // Flag that they were called out
 
-    // Draw 1 card as penalty
-    const card = cardDeck.drawCard(activeGame.deck, activeGame.discardPile);
-    if (card) {
-      calledPlayerObj.cards.push(card);
+    // Draw 2 cards as penalty
+    for (let i = 0; i < 2; i++) {
+      const card = cardDeck.drawCard(activeGame.deck, activeGame.discardPile);
+      if (card) {
+        calledPlayerObj.cards.push(card);
+      }
     }
 
     const embed = new EmbedBuilder()
@@ -99,7 +105,7 @@ module.exports = {
       .setTitle('🚨 UNO Called Out!')
       .setDescription(`${calledPlayer.tag} forgot to say UNO and was called out by ${interaction.user.tag}!`)
       .addFields(
-        { name: 'Penalty', value: `${calledPlayer.tag} draws 1 card`, inline: true },
+        { name: 'Penalty', value: `${calledPlayer.tag} draws 2 cards`, inline: true },
         { name: 'Cards Now', value: `${calledPlayerObj.cards.length} cards`, inline: true }
       )
       .setTimestamp();
