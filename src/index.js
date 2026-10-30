@@ -1,5 +1,5 @@
-const { Client, GatewayIntentBits, Collection, EmbedBuilder } = require('discord.js');
-const { token } = require('../config/config');
+const { Client, GatewayIntentBits, Collection, EmbedBuilder, ActivityType } = require('discord.js');
+const { token, botStatus } = require('../config/config');
 const fs = require('fs');
 const path = require('path');
 const gameManager = require('./utils/gameManager');

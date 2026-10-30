@@ -102,6 +102,15 @@ class GameManager {
   }
 
   /**
+   * Get all active games
+   * @returns {Array} Array of all game instances
+   */
+  getAllGames() {
+    return Array.from(this.games.values())
+      .filter(game => game.status !== 'finished');
+  }
+
+  /**
    * Add a player to a game
    * @param {string} gameId - The game ID
    * @param {string} userId - The user ID to add
