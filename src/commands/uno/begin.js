@@ -70,6 +70,11 @@ module.exports = {
       )
       .setTimestamp();
 
+    // Update the status message in the thread
+    if (game.threadId) {
+      await gameManager.updateStatusMessage(game.id, interaction.client);
+    }
+
     await interaction.reply({ embeds: [embed] });
 
     // TODO: Start game loop or notify first player

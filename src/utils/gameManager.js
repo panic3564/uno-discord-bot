@@ -30,6 +30,8 @@ class GameManager {
       id: `${guildId}-${Date.now()}`,
       guildId,
       channelId: options.channelId || null,
+      threadId: null,
+      statusMessageId: null,
       players: [],
       bots: [],
       deck: [],
@@ -802,6 +804,150 @@ class GameManager {
     if (this.gameTimers.has(gameId)) {
       clearTimeout(this.gameTimers.get(gameId));
       this.gameTimers.delete(gameId);
+    }
+  }
+
+  /**
+   * Create a thread for the game
+   * @param {string} gameId - The game ID
+   * @param {Object} client - Discord client
+   * @returns {Promise<Object|null>} Thread and game info or null if failed
+   */
+  async createGameThread(gameId, client) {
+    const game = this.getGame(gameId);
+    if (!game || !game.channelId) return null;
+
+    try {
+      const channel = await client.channels.fetch(game.channelId);
+      if (!channel.isTextBased() || !channel.threads) {
+        console.log('Cannot create thread: channel does not support threads');
+        return null;
+      }
+
+      const thread = await channel.threads.create({
+        name: `UNO Game - ${game.id}`,
+        autoArchiveDuration: 60,
+        type: 11,
+      });
+
+      game.threadId = thread.id;
+      console.log(`Created thread ${thread.id} for game ${gameId}`);
+      
+      // Create the initial status message in the thread
+      await this.updateStatusMessage(gameId, client, thread);
+      
+      return { thread, game };
+    } catch (error) {
+      console.error('Error creating game thread:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Create or update the status message in the game thread
+   * @param {string} gameId - The game ID
+   * @param {Object} client - Discord client
+   * @param {Object} thread - Thread channel (optional, will fetch if not provided)
+   * @returns {Promise<Object|null>} Message object or null if failed
+   */
+  async updateStatusMessage(gameId, client, thread = null) {
+    const game = this.getGame(gameId);
+    if (!game || !game.threadId) return null;
+
+    try {
+      // Fetch thread if not provided
+      const channel = await client.channels.fetch(game.channelId).catch(() => null);
+      if (!channel) return null;
+      
+      const threadChannel = thread || await channel.threads.fetch(game.threadId).catch(() => null);
+      if (!threadChannel) return null;
+
+      const allPlayers = this.getAllPlayers(gameId);
+      const currentPlayer = this.getCurrentPlayer(gameId);
+      const topCard = game.discardPile[game.discardPile.length - 1];
+
+      // Build player list with card counts
+      const playerList = allPlayers.map(p => {
+        const name = p.name || (p.type === 'ai' ? `**${p.avatar} ${p.name}**` : `<@${p.id}>`);
+        const isCurrent = p.id === currentPlayer?.id || (p.name && currentPlayer?.name === p.name);
+        const teamInfo = game.options.withTeams ? ` [${this.getPlayerTeam(gameId, p.id) || '?'}]` : '';
+        return `${isCurrent ? '\ud83d\udc8c' : '   '} ${p.type === 'ai' ? '\ud83e\udd16' : '\ud83d\udc64'} ${name}${teamInfo} - **${p.cards ? p.cards.length : 0}** cards`;
+      }).join('\n');
+
+      // Add team information if in team mode
+      let teamInfo = '';
+      if (game.options.withTeams) {
+        const { teamA, teamB } = this.getTeamInfo(gameId);
+        const teamACards = teamA.reduce((sum, p) => sum + (p.cards ? p.cards.length : 0), 0);
+        const teamBCards = teamB.reduce((sum, p) => sum + (p.cards ? p.cards.length : 0), 0);
+        teamInfo = `\n**Teams:**\n` +
+          `\ud83d\udd34 Team A: ${teamA.length} players, ${teamACards} total cards\n` +
+          `\ud83d\udd35 Team B: ${teamB.length} players, ${teamBCards} total cards\n`;
+      }
+
+      const topCardDisplay = topCard ? cardDeck.getCardDisplayName(topCard) : 'No card yet';
+      const topCardEmoji = topCard ? cardDeck.getCardEmoji(topCard) : '';
+
+      const embed = new (require('discord.js').EmbedBuilder)()
+        .setColor(game.status === 'playing' ? '#0000FF' : '#FFA500')
+        .setTitle(`\ud83c\udfb2 UNO Game Status - ${game.status.toUpperCase()}`)
+        .setDescription(`Game ID: **${game.id}**\n` +
+          `Created by: <@${game.createdBy}>\n\n` +
+          `\ud83c\udccf **Top Card:** ${topCardDisplay} ${topCardEmoji}\n` +
+          `\ud83d\udd04 **Direction:** ${game.direction === 1 ? '\u21bb Clockwise' : '\u21ba Counter-Clockwise'}\n\n` +
+          `**Players:**\n${playerList}\n${teamInfo}` +
+          (game.status === 'waiting' ? 
+            `\u23f3 **Waiting for players...** Use "/uno-join" to join or "/uno-begin" to start.` :
+            `\ud83c\udfae **Game in progress!** Current turn: ${currentPlayer?.name || currentPlayer?.id || 'Unknown'}`
+          )
+        )
+        .setTimestamp();
+
+      let message;
+      if (game.statusMessageId) {
+        // Update existing message
+        message = await threadChannel.messages.fetch(game.statusMessageId).catch(() => null);
+        if (message) {
+          await message.edit({ embeds: [embed] });
+        } else {
+          // Message was deleted, create new one
+          message = await threadChannel.send({ embeds: [embed] });
+          game.statusMessageId = message.id;
+        }
+      } else {
+        // Create new message
+        message = await threadChannel.send({ embeds: [embed] });
+        game.statusMessageId = message.id;
+      }
+
+      return message;
+    } catch (error) {
+      console.error('Error updating status message:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get the status message for a game
+   * @param {string} gameId - The game ID
+   * @param {Object} client - Discord client
+   * @returns {Promise<Object|null>} Message object or null if failed
+   */
+  async getStatusMessage(gameId, client) {
+    const game = this.getGame(gameId);
+    if (!game || !game.threadId || !game.statusMessageId) return null;
+
+    try {
+      const channel = await client.channels.fetch(game.channelId).catch(() => null);
+      if (!channel) return null;
+      
+      const threadChannel = await channel.threads.fetch(game.threadId).catch(() => null);
+      if (!threadChannel) return null;
+
+      return await threadChannel.messages.fetch(game.statusMessageId).catch(() => null);
+    } catch (error) {
+      console.error('Error fetching status message:', error);
+      return null;
     }
   }
 }

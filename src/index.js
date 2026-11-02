@@ -125,7 +125,19 @@ async function processAITurns() {
             }
             
             if (messageContent) {
-              await channel.send(messageContent).catch(() => {});
+              // Send to thread if available
+              if (game.threadId) {
+                const threadChannel = await channel.threads.fetch(game.threadId).catch(() => null);
+                if (threadChannel) {
+                  await threadChannel.send(messageContent).catch(() => {});
+                  // Update the status message
+                  await gameManager.updateStatusMessage(game.id, client);
+                } else {
+                  await channel.send(messageContent).catch(() => {});
+                }
+              } else {
+                await channel.send(messageContent).catch(() => {});
+              }
             }
           }
         }

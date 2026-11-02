@@ -114,6 +114,10 @@ module.exports = {
       gameManager.addBots(game.id, botCount, difficulty);
     }
 
+    // Create a thread for the game
+    const threadResult = await gameManager.createGameThread(game.id, interaction.client);
+    const threadMention = threadResult?.thread ? `<#${threadResult.thread.id}>` : `<#${channelId}>`;
+
     const botNames = game.bots.map(bot => `**${bot.avatar} ${bot.name}** (${unoBot.getDifficultyDisplay(bot.difficulty)})`).join(', ');
     const humanSlots = humanPlayers - 1; // Creator is already added
 
@@ -125,7 +129,7 @@ module.exports = {
         (withTeams ? `👥 **Team Mode: ENABLED** (Teams: A vs B)\n` : '') +
         (botCount > 0 ? `🤖 **AI Bots:** ${botNames}\n` : '') +
         `👥 **Human Players:** 1/${humanPlayers}\n` +
-        `📍 **Channel:** <#${channelId}>\n\n` +
+        `📍 **Game Thread:** ${threadMention}\n\n` +
         `Use "/uno-join" to join this game.\n` +
         `Game will auto-start when full or after the timeout.\n` +
         `Use "/uno-begin" to start early!`

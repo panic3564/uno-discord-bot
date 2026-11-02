@@ -189,7 +189,16 @@ module.exports = {
       )
       .setTimestamp();
 
-    await interaction.reply({ embeds: [embed] });
+    // Send to thread if available
+    const threadChannel = activeGame.threadId ? await interaction.channel.threads.fetch(activeGame.threadId).catch(() => null) : null;
+    if (threadChannel) {
+      await threadChannel.send({ embeds: [embed] });
+      // Update the status message
+      await gameManager.updateStatusMessage(activeGame.id, interaction.client);
+      await interaction.reply({ content: 'Card played! See the game thread.', ephemeral: true });
+    } else {
+      await interaction.reply({ embeds: [embed] });
+    }
 
     // If next player is AI, trigger AI turn after a delay
     const nextPlayer = gameManager.getCurrentPlayer(activeGame.id);
