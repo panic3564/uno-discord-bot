@@ -9,10 +9,21 @@ module.exports = {
   async execute(interaction) {
     const guildId = interaction.guildId;
     const userId = interaction.user.id;
+    const username = interaction.user.username;
     const channelId = interaction.channelId;
 
-    // Find waiting games in this channel
+    // Check if user is already in any game in this guild
     const existingGames = gameManager.getGamesByGuild(guildId);
+    const userGame = existingGames.find(g => g.players.includes(userId));
+    if (userGame) {
+      await interaction.reply({
+        content: `You are already in a game in this server. You can only join one game at a time per server.`,
+        ephemeral: true,
+      });
+      return;
+    }
+
+    // Find waiting games in this channel
     const waitingGame = existingGames.find(g => 
       g.channelId === channelId && 
       g.status === 'waiting' &&
@@ -40,7 +51,7 @@ module.exports = {
     }
 
     // Add player to game
-    const success = gameManager.addPlayer(waitingGame.id, userId);
+    const success = gameManager.addPlayer(waitingGame.id, userId, username);
     
     if (!success) {
       await interaction.reply({

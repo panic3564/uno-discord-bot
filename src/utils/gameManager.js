@@ -116,9 +116,10 @@ class GameManager {
    * Add a player to a game
    * @param {string} gameId - The game ID
    * @param {string} userId - The user ID to add
+   * @param {string} username - The username to display
    * @returns {boolean} True if player was added, false otherwise
    */
-  addPlayer(gameId, userId) {
+  addPlayer(gameId, userId, username) {
     const game = this.getGame(gameId);
     if (!game || game.status !== 'waiting') return false;
 
@@ -128,7 +129,8 @@ class GameManager {
     if (totalPlayers >= maxPlayers) return false;
     if (game.players.includes(userId)) return false;
 
-    game.players.push(userId);
+    // Store player as object with id and username
+    game.players.push({ id: userId, username: username, type: 'human' });
     return true;
   }
 
@@ -431,18 +433,26 @@ class GameManager {
   dealInitialCards(game) {
     const cardsPerPlayer = 7;
     
-    // Convert string player IDs to player objects
-    const normalizedPlayers = game.players.map(userId => {
-      if (typeof userId === 'string') {
+    // Normalize players - handle both string IDs and objects
+    const normalizedPlayers = game.players.map(player => {
+      if (typeof player === 'string') {
         return {
-          id: userId,
+          id: player,
+          username: `Player-${player.slice(0, 4)}`,
           type: 'human',
           cards: [],
           saidUno: false,
           wasCalledOut: false,
         };
       }
-      return userId;
+      return {
+        id: player.id,
+        username: player.username || `Player-${player.id.slice(0, 4)}`,
+        type: player.type || 'human',
+        cards: [],
+        saidUno: false,
+        wasCalledOut: false,
+      };
     });
     
     const allPlayers = [...normalizedPlayers, ...game.bots];

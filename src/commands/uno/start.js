@@ -43,6 +43,7 @@ module.exports = {
     const withTeams = interaction.options.getBoolean('teams') || false;
     const guildId = interaction.guildId;
     const userId = interaction.user.id;
+    const username = interaction.user.username;
     const channelId = interaction.channelId;
 
     // Check if there's already an active game in this channel
@@ -106,7 +107,7 @@ module.exports = {
     });
 
     // Add the creator as the first player
-    gameManager.addPlayer(game.id, userId);
+    gameManager.addPlayer(game.id, userId, username);
 
     // Add AI bots if requested
     if (botCount > 0) {
