@@ -528,12 +528,21 @@ class GameManager {
       const { card, color } = move.data;
       
       // Remove card from bot's hand
-      const cardIndex = currentPlayer.cards.findIndex(c => 
+      let cardIndex = currentPlayer.cards.findIndex(c => 
         c.id === card.id || (c.color === card.color && c.value === card.value && c.type === card.type)
       );
       
+      if (cardIndex === -1) {
+        // Try matching without id (for cards without unique ids)
+        cardIndex = currentPlayer.cards.findIndex(c => 
+          c.color === card.color && c.value === card.value && c.type === card.type
+        );
+      }
+      
       if (cardIndex !== -1) {
         currentPlayer.cards.splice(cardIndex, 1);
+      } else {
+        console.log(`Warning: Could not find card to remove from ${currentPlayer.name}'s hand:`, card);
       }
 
       // If it's a wild card, set the chosen color
@@ -544,10 +553,16 @@ class GameManager {
       // Add card to discard pile
       game.discardPile.push(card);
 
-      // Handle Wild Draw 4 - next player draws 4 cards
+      // Handle Wild Draw 4 - next player draws 4 cards and loses turn
       if (card.type === 'wild4') {
+        // Store the next player info before moving
+        const allPlayers = [...game.players, ...game.bots];
+        const nextPlayerIndex = (game.currentPlayer + game.direction) % allPlayers.length;
+        const nextPlayer = allPlayers[nextPlayerIndex];
+        
+        // Move to next player first
         this.moveToNextPlayer(game);
-        const nextPlayer = this.getCurrentPlayer(game.id);
+        
         if (nextPlayer) {
           // Draw 4 cards for the next player
           for (let i = 0; i < 4; i++) {
@@ -556,7 +571,7 @@ class GameManager {
               nextPlayer.cards.push(drawnCard);
             }
           }
-          // Skip the next player's turn
+          // Skip the next player's turn by moving again
           this.moveToNextPlayer(game);
         }
       } else {

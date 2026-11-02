@@ -106,10 +106,16 @@ async function processAITurns() {
               }
               // If it's a Wild Draw 4, mention the penalty
               if (card.type === 'wild4') {
-                const nextPlayer = gameManager.getCurrentPlayer(game.id);
-                const nextPlayerName = nextPlayer && nextPlayer.type === 'human' ? 
-                  `<@${nextPlayer.id}>` : nextPlayer?.name || 'next player';
-                cardDisplay += ` - ${nextPlayerName} draws 4 cards and loses their turn`;
+                // The current player after moveToNextPlayer is the one who was skipped
+                // The actual next player (who draws) is the one BEFORE the current player
+                const allPlayers = [...game.players, ...game.bots];
+                const currentIndex = game.currentPlayer;
+                // The player who draws is the one we just skipped past
+                const drawPlayerIndex = (currentIndex - game.direction + allPlayers.length) % allPlayers.length;
+                const drawPlayer = allPlayers[drawPlayerIndex];
+                const drawPlayerName = drawPlayer && drawPlayer.type === 'human' ? 
+                  `<@${drawPlayer.id}>` : drawPlayer?.name || 'next player';
+                cardDisplay += ` - ${drawPlayerName} draws 4 cards and loses their turn`;
               }
               messageContent = `${unoBot.getDisplayName(currentPlayer)} played **${cardDisplay}**`;
             } else if (move.action === 'draw') {
