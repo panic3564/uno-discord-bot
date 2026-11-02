@@ -98,7 +98,12 @@ async function processAITurns() {
             
             if (move.action === 'play') {
               const card = move.data.card;
-              messageContent = `${unoBot.getDisplayName(currentPlayer)} played **${cardDeck.getCardDisplayName(card)}** ${cardDeck.getCardEmoji(card)}`;
+              let cardDisplay = `${cardDeck.getCardDisplayName(card)} ${cardDeck.getCardEmoji(card)}`;
+              // If it's a wild card that changed color, show the chosen color
+              if ((card.type === 'wild' || card.type === 'wild4') && move.data.color) {
+                cardDisplay += ` and chose **${move.data.color}**`;
+              }
+              messageContent = `${unoBot.getDisplayName(currentPlayer)} played **${cardDisplay}**`;
             } else if (move.action === 'draw') {
               messageContent = `${unoBot.getDisplayName(currentPlayer)} drew a card`;
             } else if (move.action === 'win') {
