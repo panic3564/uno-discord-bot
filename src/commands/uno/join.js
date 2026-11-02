@@ -23,12 +23,20 @@ module.exports = {
       return;
     }
 
-    // Find waiting games in this channel
+    // Find waiting games in this channel or thread
     const waitingGame = existingGames.find(g => 
-      g.channelId === channelId && 
+      (g.channelId === channelId || g.threadId === channelId) && 
       g.status === 'waiting' &&
       g.players.includes(userId) === false
     );
+
+    // Also check if the command was run in a thread
+    if (!waitingGame && interaction.channel?.isThread()) {
+      const threadGame = existingGames.find(g => g.threadId === channelId && g.status === 'waiting' && g.players.includes(userId) === false);
+      if (threadGame) {
+        waitingGame = threadGame;
+      }
+    }
 
     if (!waitingGame) {
       await interaction.reply({

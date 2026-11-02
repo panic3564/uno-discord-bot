@@ -106,6 +106,29 @@ class GameManager {
   }
 
   /**
+   * Get a game by channel ID (including thread channels)
+   * @param {string} guildId - The guild ID
+   * @param {string} channelId - The channel ID (could be thread or regular channel)
+   * @returns {Object|null} The game instance or null if not found
+   */
+  getGameByChannel(guildId, channelId) {
+    const allGames = this.getGamesByGuild(guildId);
+    
+    // Check if channelId matches the game's channelId
+    for (const game of allGames) {
+      if (game.channelId === channelId) {
+        return game;
+      }
+      // Also check if this channelId is the game's threadId
+      if (game.threadId === channelId) {
+        return game;
+      }
+    }
+    
+    return null;
+  }
+
+  /**
    * Get all active games
    * @returns {Array} Array of all game instances
    */

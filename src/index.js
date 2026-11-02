@@ -89,9 +89,11 @@ async function processAITurns() {
       if (move) {
         console.log(`AI ${currentPlayer.name} made move: ${move.action}`);
         
-        // Send message to channel about AI's move
-        if (game.channelId) {
-          const channel = await client.channels.fetch(game.channelId).catch(() => null);
+        // Send message to channel or thread about AI's move
+        // Try thread first, then fall back to channel
+        const targetChannelId = game.threadId || game.channelId;
+        if (targetChannelId) {
+          const channel = await client.channels.fetch(targetChannelId).catch(() => null);
           if (channel) {
             const topCard = game.discardPile[game.discardPile.length - 1];
             let messageContent;

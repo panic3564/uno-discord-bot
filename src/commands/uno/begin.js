@@ -12,13 +12,26 @@ module.exports = {
     const userId = interaction.user.id;
     const channelId = interaction.channelId;
 
-    // Find waiting games in this channel
+    // Find waiting games in this channel or thread
+    // Check both regular channel and thread channel
     const existingGames = gameManager.getGamesByGuild(guildId);
     const waitingGame = existingGames.find(g => 
-      g.channelId === channelId && 
+      (g.channelId === channelId || g.threadId === channelId) && 
       g.status === 'waiting' &&
       g.createdBy === userId
     );
+
+    // Also check if the command was run in a thread
+    if (!waitingGame && interaction.channel?.isThread()) {
+      // If this is a thread, find the game that has this threadId
+      const threadGame = existingGames.find(g => g.threadId === channelId && g.status === 'waiting');
+      if (threadGame) {
+        // Check if the user is the creator or has permission
+        if (threadGame.createdBy === userId) {
+          waitingGame = threadGame;
+        }
+      }
+    }
 
     if (!waitingGame) {
       await interaction.reply({
