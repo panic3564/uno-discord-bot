@@ -118,6 +118,29 @@ module.exports = {
     const threadResult = await gameManager.createGameThread(game.id, interaction.client);
     const threadMention = threadResult?.thread ? `<#${threadResult.thread.id}>` : `<#${channelId}>`;
 
+    // Add creator to the thread and post start message
+    if (threadResult?.thread) {
+      try {
+        await threadResult.thread.members.add(userId);
+        // Post start message in thread
+        const startEmbed = new EmbedBuilder()
+          .setColor('#FF0000')
+          .setTitle('\ud83c\udfb2 UNO Game Created!')
+          .setDescription(`**${interaction.user.tag}** has created a new UNO game!\n\n` +
+            (withTeams ? `\ud83d\udc65 **Team Mode: ENABLED** (Teams: A vs B)\n` : '') +
+            (botCount > 0 ? `\ud83e\udd16 **AI Bots:** ${botNames}\n` : '') +
+            `\ud83d\udc65 **Expected Players:** ${humanPlayers}\n\n` +
+            `Use "/uno-join" to join this game.\n` +
+            `Game will auto-start when full or after the timeout.\n` +
+            `Use "/uno-begin" to start early!`
+          )
+          .setTimestamp();
+        await threadResult.thread.send({ embeds: [startEmbed] });
+      } catch (error) {
+        console.error('Error adding creator to thread:', error);
+      }
+    }
+
     const botNames = game.bots.map(bot => `**${bot.avatar} ${bot.name}** (${unoBot.getDifficultyDisplay(bot.difficulty)})`).join(', ');
     const humanSlots = humanPlayers - 1; // Creator is already added
 

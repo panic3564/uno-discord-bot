@@ -61,9 +61,28 @@ module.exports = {
       return;
     }
 
+    // Add player to the game thread
+    if (waitingGame.threadId) {
+      try {
+        const threadChannel = await interaction.channel.threads.fetch(waitingGame.threadId).catch(() => null);
+        if (threadChannel) {
+          await threadChannel.members.add(userId);
+          // Notify in thread
+          await threadChannel.send(`<@${userId}> has joined the game!`);
+        }
+      } catch (error) {
+        console.error('Error adding user to thread:', error);
+      }
+    }
+
     // Cancel existing timer and restart it (game might now be full)
     gameManager.cancelGameTimer(waitingGame.id);
     gameManager.startGameTimer(waitingGame.id, interaction.client);
+
+    // Update the status message in the thread
+    if (waitingGame.threadId) {
+      await gameManager.updateStatusMessage(waitingGame.id, interaction.client);
+    }
 
     // Check if game is ready to start
     const humanPlayers = waitingGame.players.length;
@@ -76,7 +95,7 @@ module.exports = {
       .setDescription(`You have joined game **${waitingGame.id}**\n\n` +
         `👥 **Players:** ${waitingGame.players.length}/${expectedPlayers}\n` +
         (waitingGame.bots.length > 0 ? `🤖 **Bots:** ${waitingGame.bots.length}\n` : '') +
-        `📍 **Channel:** <#${channelId}>\n\n` +
+        `📍 **Game Thread:** <#${waitingGame.threadId}>\n\n` +
         (isReady ? 
           `✅ **Game is ready!** Use "/uno-begin" to start.` :
           `⏳ **Waiting for more players...** (${expectedPlayers - humanPlayers} more needed)`

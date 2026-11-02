@@ -64,18 +64,53 @@ module.exports = {
       .setTitle('🎲 UNO Game Started!')
       .setDescription(`Game ID: **${game.id}**\n\n` +
         `🃏 **Top Card:** ${cardDeck.getCardDisplayName(topCard)}\n` +
-        `📍 **Channel:** <#${channelId}>\n\n` +
+        `📍 **Game Thread:** <#${game.threadId}>\n\n` +
         `**Players:**\n${playerList}\n\n` +
         `Current turn: <@${allPlayers[game.currentPlayer]?.id}> or ${allPlayers[game.currentPlayer]?.name}`
       )
       .setTimestamp();
 
-    // Update the status message in the thread
+    // Add all players to the thread
     if (game.threadId) {
+      try {
+        const threadChannel = await interaction.channel.threads.fetch(game.threadId).catch(() => null);
+        if (threadChannel) {
+          // Add all human players to thread
+          for (const player of allPlayers) {
+            if (player.type === 'human' && player.id) {
+              await threadChannel.members.add(player.id).catch(() => {});
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error adding players to thread:', error);
+      }
+      // Update the status message in the thread
       await gameManager.updateStatusMessage(game.id, interaction.client);
     }
 
     await interaction.reply({ embeds: [embed] });
+
+    // Post start notification in thread
+    if (game.threadId) {
+      try {
+        const threadChannel = await interaction.channel.threads.fetch(game.threadId).catch(() => null);
+        if (threadChannel) {
+          const startEmbed = new EmbedBuilder()
+            .setColor('#00FF00')
+            .setTitle('\u2705 Game Started!')
+            .setDescription(`<@${userId}> has started the game!\n\n` +
+              `\ud83c\udccf **Top Card:** ${cardDeck.getCardDisplayName(topCard)}\n` +
+              `**Players:**\n${playerList}\n\n` +
+              `Current turn: <@${allPlayers[game.currentPlayer]?.id}> or ${allPlayers[game.currentPlayer]?.name}`
+            )
+            .setTimestamp();
+          await threadChannel.send({ embeds: [startEmbed] });
+        }
+      } catch (error) {
+        console.error('Error posting start message to thread:', error);
+      }
+    }
 
     // TODO: Start game loop or notify first player
     // This would involve setting up turn-based gameplay
