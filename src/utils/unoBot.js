@@ -122,7 +122,14 @@ class UNOBot {
 
     // Just play the first playable card
     const card = playableCards[0];
-    return { action: 'play', data: { card, color: null } };
+    let color = null;
+
+    // If it's a wild card, choose a color
+    if (card.type === 'wild' || card.type === 'wild4') {
+      color = this.chooseColor(bot.cards, topCard);
+    }
+
+    return { action: 'play', data: { card, color } };
   }
 
   /**
