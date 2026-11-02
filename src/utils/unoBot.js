@@ -303,8 +303,15 @@ class UNOBot {
         return true;
       }
 
-      // Matching value or type
-      if (card.value === topCard.value || card.type === topCard.type) {
+      // Matching value (for number cards)
+      if (card.value && topCard.value && card.value === topCard.value) {
+        return true;
+      }
+
+      // Matching type (for special cards like draw2, skip, reverse)
+      // Special cards can only match by type if they have the same color
+      // Actually, special cards match by color OR by type
+      if (card.type === topCard.type && card.type !== 'number') {
         return true;
       }
 
