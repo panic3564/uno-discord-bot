@@ -92,11 +92,13 @@ module.exports = {
       .setTimestamp();
 
     // Send to thread if available
-      const threadChannel = activeGame.threadId ? await interaction.channel.threads.fetch(activeGame.threadId).catch(() => null) : null;
-      if (threadChannel) {
-        await threadChannel.send({ embeds: [embed] });
-      }
-      await interaction.reply({ embeds: [embed], ephemeral: true });
+    const threadChannel = activeGame.threadId ? await interaction.channel.threads.fetch(activeGame.threadId).catch(() => null) : null;
+    if (threadChannel) {
+      await threadChannel.send({ embeds: [embed] });
+      // Update the status message
+      await gameManager.updateStatusMessage(activeGame.id, interaction.client);
+    }
+    await interaction.reply({ embeds: [embed], ephemeral: true });
 
     // If the drawn card is playable and it's still their turn, they can play it
     if (isPlayable) {

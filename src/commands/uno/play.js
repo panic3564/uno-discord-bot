@@ -193,6 +193,8 @@ module.exports = {
     const threadChannel = activeGame.threadId ? await interaction.channel.threads.fetch(activeGame.threadId).catch(() => null) : null;
     if (threadChannel) {
       await threadChannel.send({ embeds: [embed] });
+      // Update the status message
+      await gameManager.updateStatusMessage(activeGame.id, interaction.client);
       await interaction.reply({ content: 'Card played! See the game thread.', ephemeral: true });
     } else {
       await interaction.reply({ embeds: [embed] });
