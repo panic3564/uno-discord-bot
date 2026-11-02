@@ -34,11 +34,26 @@ module.exports = {
     }
 
     if (!waitingGame) {
-      await interaction.reply({
-        content: 'No waiting game found in this channel that you created. Use `/uno-start` to create a new game.',
-        ephemeral: true,
-      });
-      return;
+      // Also check if user is trying to start a game they didn't create but are in
+      const anyWaitingGame = existingGames.find(g => 
+        (g.channelId === channelId || g.threadId === channelId) && 
+        g.status === 'waiting'
+      );
+      
+      if (anyWaitingGame && interaction.channel?.isThread()) {
+        // Allow starting if command is in the game thread
+        if (anyWaitingGame.threadId === channelId) {
+          waitingGame = anyWaitingGame;
+        }
+      }
+      
+      if (!waitingGame) {
+        await interaction.reply({
+          content: 'No waiting game found in this channel that you created. Use `/uno-start` to create a new game.',
+          ephemeral: true,
+        });
+        return;
+      }
     }
 
     // Validate game setup

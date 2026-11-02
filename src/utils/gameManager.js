@@ -856,8 +856,22 @@ class GameManager {
       game.threadId = thread.id;
       console.log(`Created thread ${thread.id} for game ${gameId}`);
       
-      // Create the initial status message in the thread
-      await this.updateStatusMessage(gameId, client, thread);
+      // Post initial message in the thread
+      if (thread) {
+        const initialEmbed = new (require('discord.js').EmbedBuilder)()
+          .setColor('#FF0000')
+          .setTitle('\ud83c\udfb2 UNO Game Created!')
+          .setDescription(`Game ID: **${game.id}**\n\n` +
+            `Created by: <@${game.createdBy}>\n` +
+            `\ud83d\udc65 **Players:** ${game.players.length}/${game.options.maxPlayers || 4}\n` +
+            (game.bots.length > 0 ? `\ud83e\udd16 **Bots:** ${game.bots.length}\n` : '') +
+            `\nUse "/uno-join" to join this game.\n` +
+            `Game will auto-start when full or after the timeout.\n` +
+            `Use "/uno-begin" to start early!`
+          )
+          .setTimestamp();
+        await thread.send({ embeds: [initialEmbed] });
+      }
       
       return { thread, game };
     } catch (error) {
@@ -894,7 +908,8 @@ class GameManager {
         const name = p.name || (p.type === 'ai' ? `**${p.avatar} ${p.name}**` : `<@${p.id}>`);
         const isCurrent = p.id === currentPlayer?.id || (p.name && currentPlayer?.name === p.name);
         const teamInfo = game.options.withTeams ? ` [${this.getPlayerTeam(gameId, p.id) || '?'}]` : '';
-        return `${isCurrent ? '\ud83d\udc8c' : '   '} ${p.type === 'ai' ? '\ud83e\udd16' : '\ud83d\udc64'} ${name}${teamInfo} - **${p.cards ? p.cards.length : 0}** cards`;
+        const cardCount = p.cards ? p.cards.length : (game.status === 'waiting' && p.type === 'human' ? 'waiting' : '0');
+        return `${isCurrent ? '\ud83d\udc8c' : '   '} ${p.type === 'ai' ? '\ud83e\udd16' : '\ud83d\udc64'} ${name}${teamInfo} - **${cardCount}** cards`;
       }).join('\n');
 
       // Add team information if in team mode
