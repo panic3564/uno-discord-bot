@@ -363,6 +363,7 @@ class GameManager {
 
     game.status = 'playing';
     game.lastAction = new Date();
+    game.currentPlayer = 0; // Start with the first player (index 0)
 
     // Assign teams if team mode is enabled
     if (game.options.withTeams) {
@@ -543,6 +544,26 @@ class GameManager {
       // Add card to discard pile
       game.discardPile.push(card);
 
+      // Handle Wild Draw 4 - next player draws 4 cards
+      if (card.type === 'wild4') {
+        this.moveToNextPlayer(game);
+        const nextPlayer = this.getCurrentPlayer(game.id);
+        if (nextPlayer) {
+          // Draw 4 cards for the next player
+          for (let i = 0; i < 4; i++) {
+            const drawnCard = cardDeck.drawCard(game.deck, game.discardPile);
+            if (drawnCard) {
+              nextPlayer.cards.push(drawnCard);
+            }
+          }
+          // Skip the next player's turn
+          this.moveToNextPlayer(game);
+        }
+      } else {
+        // Move to next player
+        this.moveToNextPlayer(game);
+      }
+
       // Check if bot has one card left
       if (currentPlayer.cards.length === 1) {
         currentPlayer.saidUno = true;
@@ -552,13 +573,10 @@ class GameManager {
       if (currentPlayer.cards.length === 0) {
         game.status = 'finished';
         game.winner = currentPlayer;
-        return { action: 'win', data: { player: currentPlayer } };
+        return { action: 'win', data: { player: currentPlayer, color } };
       }
 
-      // Move to next player
-      this.moveToNextPlayer(game);
-
-      return { action: 'play', data: { card, player: currentPlayer } };
+      return { action: 'play', data: { card, color, player: currentPlayer } };
     }
 
     if (move.action === 'draw') {

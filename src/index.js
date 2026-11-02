@@ -100,8 +100,16 @@ async function processAITurns() {
               const card = move.data.card;
               let cardDisplay = `${cardDeck.getCardDisplayName(card)} ${cardDeck.getCardEmoji(card)}`;
               // If it's a wild card that changed color, show the chosen color
-              if ((card.type === 'wild' || card.type === 'wild4') && move.data.color) {
-                cardDisplay += ` and chose **${move.data.color}**`;
+              if ((card.type === 'wild' || card.type === 'wild4') && (move.data.color || card.color)) {
+                const chosenColor = move.data.color || card.color;
+                cardDisplay += ` and chose **${chosenColor}**`;
+              }
+              // If it's a Wild Draw 4, mention the penalty
+              if (card.type === 'wild4') {
+                const nextPlayer = gameManager.getCurrentPlayer(game.id);
+                const nextPlayerName = nextPlayer && nextPlayer.type === 'human' ? 
+                  `<@${nextPlayer.id}>` : nextPlayer?.name || 'next player';
+                cardDisplay += ` - ${nextPlayerName} draws 4 cards and loses their turn`;
               }
               messageContent = `${unoBot.getDisplayName(currentPlayer)} played **${cardDisplay}**`;
             } else if (move.action === 'draw') {
