@@ -30,6 +30,8 @@ class GameManager {
       id: `${guildId}-${Date.now()}`,
       guildId,
       channelId: options.channelId || null,
+      threadId: null,
+      statusMessageId: null,
       players: [],
       bots: [],
       deck: [],
@@ -802,6 +804,38 @@ class GameManager {
     if (this.gameTimers.has(gameId)) {
       clearTimeout(this.gameTimers.get(gameId));
       this.gameTimers.delete(gameId);
+    }
+  }
+
+  /**
+   * Create a thread for the game
+   * @param {string} gameId - The game ID
+   * @param {Object} client - Discord client
+   * @returns {Promise<Object|null>} Thread and game info or null if failed
+   */
+  async createGameThread(gameId, client) {
+    const game = this.getGame(gameId);
+    if (!game || !game.channelId) return null;
+
+    try {
+      const channel = await client.channels.fetch(game.channelId);
+      if (!channel.isTextBased() || !channel.threads) {
+        console.log('Cannot create thread: channel does not support threads');
+        return null;
+      }
+
+      const thread = await channel.threads.create({
+        name: `UNO Game - ${game.id}`,
+        autoArchiveDuration: 60,
+        type: 11,
+      });
+
+      game.threadId = thread.id;
+      console.log(`Created thread ${thread.id} for game ${gameId}`);
+      return { thread, game };
+    } catch (error) {
+      console.error('Error creating game thread:', error);
+      return null;
     }
   }
 }
