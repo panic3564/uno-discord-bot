@@ -30,14 +30,6 @@ module.exports = {
       !g.players.some(p => p.id === userId)
     );
 
-    // Also check if the command was run in a thread
-    if (!waitingGame && interaction.channel?.isThread()) {
-      const threadGame = existingGames.find(g => g.threadId === channelId && g.status === 'waiting' && g.players.includes(userId) === false);
-      if (threadGame) {
-        waitingGame = threadGame;
-      }
-    }
-
     if (!waitingGame) {
       await interaction.reply({
         content: 'No waiting game found in this channel that you can join. Use `/uno-start` to create a new game.',
