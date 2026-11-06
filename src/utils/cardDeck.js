@@ -3,6 +3,8 @@
  * Handles card creation, validation, and deck operations
  */
 
+const crypto = require('crypto');
+
 class CardDeck {
   constructor() {
     this.colors = ['red', 'blue', 'green', 'yellow'];
@@ -51,7 +53,7 @@ class CardDeck {
     // and wild4 cards are never misclassified as plain number cards
     const derivedType = type || (this.specialValues.includes(value) || this.specialTypes.includes(value) ? value : 'number');
     return {
-      id: `${color || 'wild'}-${value || derivedType}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      id: `${color || 'wild'}-${value || derivedType}-${crypto.randomUUID()}`,
       color,
       value,
       type: derivedType,
