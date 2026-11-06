@@ -152,7 +152,7 @@ class GameManager {
     const maxPlayers = game.options.maxPlayers || this.maxPlayers;
     
     if (totalPlayers >= maxPlayers) return false;
-    if (game.players.includes(userId)) return false;
+    if (game.players.some(p => p.id === userId)) return false;
 
     // Store player as object with id and username
     game.players.push({ id: userId, username: username, type: 'human' });
@@ -169,7 +169,7 @@ class GameManager {
     const game = this.getGame(gameId);
     if (!game) return false;
 
-    const index = game.players.indexOf(userId);
+    const index = game.players.findIndex(p => p.id === userId);
     if (index === -1) return false;
 
     game.players.splice(index, 1);
