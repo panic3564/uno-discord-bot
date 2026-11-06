@@ -12,48 +12,25 @@ module.exports = {
     const userId = interaction.user.id;
     const channelId = interaction.channelId;
 
-    // Find waiting games in this channel or thread
-    // Check both regular channel and thread channel
-    const existingGames = gameManager.getGamesByGuild(guildId);
-    const waitingGame = existingGames.find(g => 
-      (g.channelId === channelId || g.threadId === channelId) && 
-      g.status === 'waiting' &&
-      g.createdBy === userId
-    );
-
-    // Also check if the command was run in a thread
-    if (!waitingGame && interaction.channel?.isThread()) {
-      // If this is a thread, find the game that has this threadId
-      const threadGame = existingGames.find(g => g.threadId === channelId && g.status === 'waiting');
-      if (threadGame) {
-        // Check if the user is the creator or has permission
-        if (threadGame.createdBy === userId) {
-          waitingGame = threadGame;
-        }
-      }
-    }
+    // Find the waiting game in this channel or its game thread
+    const waitingGame = gameManager.findGameByChannel(guildId, channelId, { status: 'waiting' });
 
     if (!waitingGame) {
-      // Also check if user is trying to start a game they didn't create but are in
-      const anyWaitingGame = existingGames.find(g => 
-        (g.channelId === channelId || g.threadId === channelId) && 
-        g.status === 'waiting'
-      );
-      
-      if (anyWaitingGame && interaction.channel?.isThread()) {
-        // Allow starting if command is in the game thread
-        if (anyWaitingGame.threadId === channelId) {
-          waitingGame = anyWaitingGame;
-        }
-      }
-      
-      if (!waitingGame) {
-        await interaction.reply({
-          content: 'No waiting game found in this channel that you created. Use `/uno-start` to create a new game.',
-          ephemeral: true,
-        });
-        return;
-      }
+      await interaction.reply({
+        content: 'No waiting game found in this channel that you created. Use `/uno-start` to create a new game.',
+        ephemeral: true,
+      });
+      return;
+    }
+
+    // Only the creator may start the game, except when the command is run
+    // from inside the game thread
+    if (waitingGame.createdBy !== userId && !(interaction.channel?.isThread() && waitingGame.threadId === channelId)) {
+      await interaction.reply({
+        content: 'No waiting game found in this channel that you created. Use `/uno-start` to create a new game.',
+        ephemeral: true,
+      });
+      return;
     }
 
     // Validate game setup

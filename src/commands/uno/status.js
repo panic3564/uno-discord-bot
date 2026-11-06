@@ -11,17 +11,8 @@ module.exports = {
     const guildId = interaction.guildId;
     const channelId = interaction.channelId;
 
-    // Find active games in this channel or thread
-    const existingGames = gameManager.getGamesByGuild(guildId);
-    const activeGame = existingGames.find(g => (g.channelId === channelId || g.threadId === channelId) && g.status !== 'finished');
-
-    // Also check if the command was run in a thread
-    if (!activeGame && interaction.channel?.isThread()) {
-      const threadGame = existingGames.find(g => g.threadId === channelId && g.status !== 'finished');
-      if (threadGame) {
-        activeGame = threadGame;
-      }
-    }
+    // Find the game in this channel or its game thread (waiting or playing)
+    const activeGame = gameManager.findGameByChannel(guildId, channelId);
 
     if (!activeGame) {
       await interaction.reply({

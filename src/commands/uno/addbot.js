@@ -31,13 +31,8 @@ module.exports = {
     const count = interaction.options.getInteger('count');
     const difficulty = interaction.options.getString('difficulty') || 'medium';
 
-    // Find waiting games in this channel
-    const existingGames = gameManager.getGamesByGuild(guildId);
-    const waitingGame = existingGames.find(g => 
-      g.channelId === channelId && 
-      g.status === 'waiting' &&
-      g.createdBy === userId
-    );
+    // Find the waiting game created by this user in this channel
+    const waitingGame = gameManager.findGameByChannel(guildId, channelId, { status: 'waiting', createdBy: userId, matchThreads: false });
 
     if (!waitingGame) {
       await interaction.reply({
