@@ -129,6 +129,27 @@ class GameManager {
   }
 
   /**
+   * Find a game associated with a channel, optionally filtered by status and
+   * creator. Shared by all commands so the lookup rules (parent channel or
+   * game thread) live in one place.
+   * @param {string} guildId - The guild ID
+   * @param {string} channelId - The channel ID (regular channel or thread)
+   * @param {Object} [options] - Optional filters
+   * @param {string|null} [options.status=null] - Required game status
+   * @param {string|null} [options.createdBy=null] - Required creator user ID
+   * @param {boolean} [options.matchThreads=true] - Whether the game thread ID also matches
+   * @returns {Object|null} The matching game instance or null
+   */
+  findGameByChannel(guildId, channelId, options = {}) {
+    const { status = null, createdBy = null, matchThreads = true } = options;
+    return this.getGamesByGuild(guildId).find(g =>
+      (matchThreads ? (g.channelId === channelId || g.threadId === channelId) : g.channelId === channelId) &&
+      (status === null || g.status === status) &&
+      (createdBy === null || g.createdBy === createdBy)
+    ) || null;
+  }
+
+  /**
    * Get all active games
    * @returns {Array} Array of all game instances
    */

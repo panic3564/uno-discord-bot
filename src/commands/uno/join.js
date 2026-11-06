@@ -23,12 +23,8 @@ module.exports = {
       return;
     }
 
-    // Find waiting games in this channel or thread
-    const waitingGame = existingGames.find(g => 
-      (g.channelId === channelId || g.threadId === channelId) && 
-      g.status === 'waiting' &&
-      !g.players.some(p => p.id === userId)
-    );
+    // Find the waiting game in this channel or its game thread
+    const waitingGame = gameManager.findGameByChannel(guildId, channelId, { status: 'waiting' });
 
     if (!waitingGame) {
       await interaction.reply({

@@ -46,10 +46,9 @@ module.exports = {
     const username = interaction.user.username;
     const channelId = interaction.channelId;
 
-    // Check if there's already an active game in this channel
-    const existingGames = gameManager.getGamesByGuild(guildId);
-    const activeGameInChannel = existingGames.find(g => g.channelId === channelId && g.status === 'waiting');
-    
+    // Check if there's already a waiting game in this channel
+    const activeGameInChannel = gameManager.findGameByChannel(guildId, channelId, { status: 'waiting', matchThreads: false });
+
     if (activeGameInChannel) {
       await interaction.reply({
         content: `There's already a game waiting in this channel! Use "/uno-join" to join it.`,
