@@ -12,6 +12,8 @@ logs/
 npm-debug.log*
 
 # Runtime data
+# Persisted game state
+data/
 pids/
 *.pid
 *.seed

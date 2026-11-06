@@ -5,6 +5,7 @@ const path = require('path');
 const gameManager = require('./utils/gameManager');
 const unoBot = require('./utils/unoBot');
 const cardDeck = require('./utils/cardDeck');
+const persistence = require('./utils/persistence');
 
 // Create a new client instance
 const client = new Client({
@@ -62,6 +63,7 @@ for (const file of eventFiles) {
 
 // AI Turn Processor - Check for AI turns every 5 seconds
 let aiTurnInterval;
+let saveInterval;
 
 /**
  * Process all pending AI turns
@@ -157,10 +159,26 @@ process.on('unhandledRejection', console.error);
 // Login to Discord with your client's token
 client.login(token).then(() => {
   console.log('Bot is online!');
-  
+
+  // Restore games saved before the last shutdown so a restart does not lose them
+  persistence.loadGames();
+
+  // Rebuild the auto-start timer for restored games still waiting for
+  // players; timers cannot be persisted, so they are restarted on startup
+  for (const game of gameManager.getAllGames()) {
+    if (game.status === 'waiting') {
+      gameManager.startGameTimer(game.id, client);
+    }
+  }
+
   // Start AI turn processor
   aiTurnInterval = setInterval(processAITurns, 5000);
   console.log('AI turn processor started');
+
+  // Periodically persist the game state so an unexpected crash loses at
+  // most one interval of progress
+  saveInterval = setInterval(() => persistence.saveGames(), 30000);
+  console.log('Game state autosave started');
 }).catch((error) => {
   console.error('Failed to login:', error);
 });
@@ -170,6 +188,11 @@ process.on('SIGINT', () => {
   if (aiTurnInterval) {
     clearInterval(aiTurnInterval);
   }
+  if (saveInterval) {
+    clearInterval(saveInterval);
+  }
+  // Persist the game state before shutting down
+  persistence.saveGames();
   client.destroy();
   process.exit(0);
 });
@@ -178,6 +201,11 @@ process.on('SIGTERM', () => {
   if (aiTurnInterval) {
     clearInterval(aiTurnInterval);
   }
+  if (saveInterval) {
+    clearInterval(saveInterval);
+  }
+  // Persist the game state before shutting down
+  persistence.saveGames();
   client.destroy();
   process.exit(0);
 });
