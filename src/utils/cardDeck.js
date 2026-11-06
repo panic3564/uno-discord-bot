@@ -80,14 +80,22 @@ class CardDeck {
    * @returns {Object} The drawn card
    */
   drawCard(deck, discardPile) {
-    // If deck is empty, reshuffle discard pile (except top card)
+    // If deck is empty, reshuffle the discard pile (except the top card)
     if (deck.length === 0) {
       if (discardPile.length > 1) {
         // Keep the top card of the discard pile
         const topCard = discardPile.pop();
-        // Reshuffle the rest and add to deck
-        const reshuffled = this.shuffleDeck(discardPile);
-        deck.push(...reshuffled);
+        // Remove the remaining discard cards from the pile before adding them
+        // to the deck; keeping them in both arrays would deal the same card
+        // twice
+        const recycled = discardPile.splice(0);
+        for (const card of recycled) {
+          // Wild cards return to being colorless when they re-enter the deck
+          if (card.type === 'wild' || card.type === 'wild4') {
+            card.color = null;
+          }
+        }
+        deck.push(...this.shuffleDeck(recycled));
         discardPile.push(topCard);
       } else {
         // Can't draw, no cards left
