@@ -588,31 +588,9 @@ class GameManager {
       // Add card to discard pile
       game.discardPile.push(card);
 
-      // Handle Wild Draw 4 - next player draws 4 cards and loses turn
-      if (card.type === 'wild4') {
-        // Store the next player info before moving
-        const allPlayers = [...game.players, ...game.bots];
-        const nextPlayerIndex = (game.currentPlayer + game.direction) % allPlayers.length;
-        const nextPlayer = allPlayers[nextPlayerIndex];
-        
-        // Move to next player first
-        this.moveToNextPlayer(game);
-        
-        if (nextPlayer) {
-          // Draw 4 cards for the next player
-          for (let i = 0; i < 4; i++) {
-            const drawnCard = cardDeck.drawCard(game.deck, game.discardPile);
-            if (drawnCard) {
-              nextPlayer.cards.push(drawnCard);
-            }
-          }
-          // Skip the next player's turn by moving again
-          this.moveToNextPlayer(game);
-        }
-      } else {
-        // Move to next player
-        this.moveToNextPlayer(game);
-      }
+      // Apply the card's effects (draw penalties, skips, direction changes)
+      // and advance to the next player
+      this.applyCardEffectsAndAdvance(game, card);
 
       // Check if bot has one card left
       if (currentPlayer.cards.length === 1) {
@@ -655,6 +633,49 @@ class GameManager {
     if (game.currentPlayer < 0) {
       game.currentPlayer += allPlayers.length;
     }
+    game.lastAction = new Date();
+  }
+
+  /**
+   * Apply a played card's effects and advance play to the next player
+   * @param {Object} game - The game instance
+   * @param {Object} card - The card that was played
+   */
+  applyCardEffectsAndAdvance(game, card) {
+    // Reverse the direction of play
+    if (card.type === 'reverse') {
+      game.direction *= -1;
+    }
+
+    // Advance to the next player
+    this.moveToNextPlayer(game);
+
+    // draw2 / wild4: the next player draws cards and also loses their turn
+    if (card.type === 'draw2' || card.type === 'wild4') {
+      const drawCount = card.type === 'wild4' ? 4 : 2;
+      const victim = this.getCurrentPlayer(game.id);
+      if (victim && victim.cards) {
+        for (let i = 0; i < drawCount; i++) {
+          const drawnCard = cardDeck.drawCard(game.deck, game.discardPile);
+          if (drawnCard) {
+            victim.cards.push(drawnCard);
+          }
+        }
+      }
+      this.moveToNextPlayer(game);
+    }
+
+    // Skip: the next player loses their turn
+    if (card.type === 'skip') {
+      this.moveToNextPlayer(game);
+    }
+
+    // In a two-player game, reverse acts as a skip: the same player plays again
+    const totalPlayers = game.players.length + game.bots.length;
+    if (card.type === 'reverse' && totalPlayers === 2) {
+      this.moveToNextPlayer(game);
+    }
+
     game.lastAction = new Date();
   }
 
