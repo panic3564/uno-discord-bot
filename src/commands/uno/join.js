@@ -14,7 +14,7 @@ module.exports = {
 
     // Check if user is already in any game in this guild
     const existingGames = gameManager.getGamesByGuild(guildId);
-    const userGame = existingGames.find(g => g.players.includes(userId));
+    const userGame = existingGames.find(g => g.players.some(p => p.id === userId));
     if (userGame) {
       await interaction.reply({
         content: `You are already in a game in this server. You can only join one game at a time per server.`,
@@ -27,16 +27,8 @@ module.exports = {
     const waitingGame = existingGames.find(g => 
       (g.channelId === channelId || g.threadId === channelId) && 
       g.status === 'waiting' &&
-      g.players.includes(userId) === false
+      !g.players.some(p => p.id === userId)
     );
-
-    // Also check if the command was run in a thread
-    if (!waitingGame && interaction.channel?.isThread()) {
-      const threadGame = existingGames.find(g => g.threadId === channelId && g.status === 'waiting' && g.players.includes(userId) === false);
-      if (threadGame) {
-        waitingGame = threadGame;
-      }
-    }
 
     if (!waitingGame) {
       await interaction.reply({
