@@ -414,27 +414,9 @@ class GameManager {
    * @param {Object} game - The game instance
    */
   initializeDeck(game) {
-    const colors = ['red', 'blue', 'green', 'yellow'];
-    const values = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'skip', 'reverse', 'draw2'];
-    const special = ['wild', 'wild4'];
-
-    // Create regular cards
-    for (const color of colors) {
-      for (const value of values) {
-        // Add two of each card (except 0 which has one)
-        const count = value === '0' ? 1 : 2;
-        for (let i = 0; i < count; i++) {
-          game.deck.push({ color, value, type: 'number' });
-        }
-      }
-    }
-
-    // Create special cards (4 of each type)
-    for (const type of special) {
-      for (let i = 0; i < 4; i++) {
-        game.deck.push({ color: null, value: null, type });
-      }
-    }
+    // Use the shared CardDeck factory so that every card carries the correct
+    // type (number, skip, reverse, draw2, wild, wild4) and a unique id
+    game.deck = cardDeck.createDeck();
 
     // Shuffle the deck
     this.shuffleDeck(game);
