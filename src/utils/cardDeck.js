@@ -8,6 +8,7 @@ class CardDeck {
     this.colors = ['red', 'blue', 'green', 'yellow'];
     this.values = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'skip', 'reverse', 'draw2'];
     this.specialTypes = ['wild', 'wild4'];
+    this.specialValues = ['skip', 'reverse', 'draw2'];
   }
 
   /**
@@ -45,12 +46,15 @@ class CardDeck {
    * @param {string} type - Card type (number, skip, reverse, draw2, wild, wild4)
    * @returns {Object} Card object
    */
-  createCard(color, value, type = 'number') {
+  createCard(color, value, type = null) {
+    // Derive the card type from its value so that skip, reverse, draw2, wild
+    // and wild4 cards are never misclassified as plain number cards
+    const derivedType = type || (this.specialValues.includes(value) || this.specialTypes.includes(value) ? value : 'number');
     return {
-      id: `${color || 'wild'}-${value || type}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      id: `${color || 'wild'}-${value || derivedType}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       color,
       value,
-      type,
+      type: derivedType,
       playable: true,
     };
   }
@@ -111,8 +115,15 @@ class CardDeck {
       return true;
     }
 
-    // Matching value/type
-    if (card.value === topCard.value || card.type === topCard.type) {
+    // Matching value (also covers skip on skip, draw2 on draw2, etc.)
+    if (card.value !== null && card.value === topCard.value) {
+      return true;
+    }
+
+    // Matching type, but only for special cards: every number card shares the
+    // type 'number', so comparing types directly would make any number card
+    // playable on any other number card
+    if (card.type !== 'number' && card.type === topCard.type) {
       return true;
     }
 
