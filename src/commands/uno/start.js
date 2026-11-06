@@ -118,6 +118,10 @@ module.exports = {
     const threadResult = await gameManager.createGameThread(game.id, interaction.client);
     const threadMention = threadResult?.thread ? `<#${threadResult.thread.id}>` : `<#${channelId}>`;
 
+    // Format the bot names for display; this must be declared before the
+    // thread message below, which references it
+    const botNames = game.bots.map(bot => `**${bot.avatar} ${bot.name}** (${unoBot.getDifficultyDisplay(bot.difficulty)})`).join(', ');
+
     // Add creator to the thread and post start message
     if (threadResult?.thread) {
       try {
@@ -141,7 +145,6 @@ module.exports = {
       }
     }
 
-    const botNames = game.bots.map(bot => `**${bot.avatar} ${bot.name}** (${unoBot.getDifficultyDisplay(bot.difficulty)})`).join(', ');
     const humanSlots = humanPlayers - 1; // Creator is already added
 
     const embed = new EmbedBuilder()
