@@ -25,14 +25,6 @@ module.exports = {
       g.status === 'playing'
     );
 
-    // Also check if the command was run in a thread
-    if (!activeGame && interaction.channel?.isThread()) {
-      const threadGame = existingGames.find(g => g.threadId === channelId && g.status === 'playing');
-      if (threadGame) {
-        activeGame = threadGame;
-      }
-    }
-
     if (!activeGame) {
       await interaction.reply({
         content: 'There is no active UNO game in this channel.',
