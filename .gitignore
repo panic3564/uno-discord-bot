@@ -33,7 +33,3 @@ build/
 # OS generated files
 .DS_Store
 Thumbs.db
-
-# Test files
-.test.js
-.spec.js
