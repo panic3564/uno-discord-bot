@@ -246,10 +246,10 @@ class UNOBot {
    * @returns {boolean} True if the card would help opponents
    */
   wouldHelpOpponent(card, bot, game) {
+    const nextPlayer = this.getNextPlayer(game);
+
     // Skip cards that let next player play
     if (card.type === 'skip') {
-      const nextPlayerIndex = this.getNextPlayerIndex(game);
-      const nextPlayer = game.players[nextPlayerIndex];
       // If next player has many cards of the same color, skip might not be good
       if (nextPlayer && nextPlayer.cards) {
         const sameColorCount = nextPlayer.cards.filter(c => c.color === card.color).length;
@@ -259,8 +259,6 @@ class UNOBot {
 
     // Draw2 cards are usually good, but not if opponent has many draw cards
     if (card.type === 'draw2') {
-      const nextPlayerIndex = this.getNextPlayerIndex(game);
-      const nextPlayer = game.players[nextPlayerIndex];
       if (nextPlayer && nextPlayer.cards) {
         const drawCards = nextPlayer.cards.filter(c => c.type === 'draw2' || c.type === 'wild4');
         return drawCards.length >= 2;
@@ -280,6 +278,16 @@ class UNOBot {
     const totalPlayers = game.players.length + game.bots.length;
     const nextIndex = (currentIndex + game.direction) % totalPlayers;
     return nextIndex >= 0 ? nextIndex : totalPlayers + nextIndex;
+  }
+
+  /**
+   * Get the next player object in rotation (humans and bots combined)
+   * @param {Object} game - The game instance
+   * @returns {Object|null} The next player object or null
+   */
+  getNextPlayer(game) {
+    const allPlayers = [...game.players, ...game.bots];
+    return allPlayers[this.getNextPlayerIndex(game)] || null;
   }
 
   /**
