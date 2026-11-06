@@ -143,49 +143,9 @@ module.exports = {
       return;
     }
 
-    // Handle special cards
-    switch (selectedCard.type) {
-      case 'skip':
-        // Skip next player
-        gameManager.moveToNextPlayer(activeGame);
-        break;
-      case 'reverse':
-        // Reverse direction
-        activeGame.direction *= -1;
-        break;
-      case 'draw2':
-        // Next player draws 2 cards
-        gameManager.moveToNextPlayer(activeGame);
-        const nextPlayer = gameManager.getCurrentPlayer(activeGame.id);
-        if (nextPlayer && nextPlayer.cards) {
-          for (let i = 0; i < 2; i++) {
-            const card = cardDeck.drawCard(activeGame.deck, activeGame.discardPile);
-            if (card) nextPlayer.cards.push(card);
-          }
-        }
-        break;
-      case 'wild4':
-        // Next player draws 4 cards
-        gameManager.moveToNextPlayer(activeGame);
-        const nextPlayerWild = gameManager.getCurrentPlayer(activeGame.id);
-        if (nextPlayerWild && nextPlayerWild.cards) {
-          for (let i = 0; i < 4; i++) {
-            const card = cardDeck.drawCard(activeGame.deck, activeGame.discardPile);
-            if (card) nextPlayerWild.cards.push(card);
-          }
-        }
-        break;
-      default:
-        // Regular card, move to next player
-        gameManager.moveToNextPlayer(activeGame);
-    }
-
-    // If not a skip card, move to next player
-    if (selectedCard.type !== 'skip' && selectedCard.type !== 'draw2' && selectedCard.type !== 'wild4') {
-      gameManager.moveToNextPlayer(activeGame);
-    }
-
-    activeGame.lastAction = new Date();
+    // Apply the card's effects (draw penalties, skips, direction changes)
+    // and advance to the next player
+    gameManager.applyCardEffectsAndAdvance(activeGame, selectedCard);
 
     const embed = new EmbedBuilder()
       .setColor('#0000FF')
