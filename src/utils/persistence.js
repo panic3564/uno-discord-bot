@@ -33,7 +33,9 @@ function saveGames() {
     const file = getPersistenceFile();
     const state = {
       savedAt: new Date().toISOString(),
-      games: Array.from(gameManager.games.values()),
+      // Finished games are never persisted: their cleanup timer cannot be
+      // rebuilt across a restart, so persisting them would let them linger
+      games: Array.from(gameManager.games.values()).filter(game => game.status !== 'finished'),
       pendingGames: Array.from(gameManager.pendingGames.entries()),
     };
 
@@ -56,11 +58,16 @@ function loadGames() {
     const state = JSON.parse(fs.readFileSync(file, 'utf8'));
     const games = Array.isArray(state.games) ? state.games : [];
 
+    let restored = 0;
     for (const game of games) {
+      // Defensive: skip finished games from older persistence files
+      if (game.status === 'finished') continue;
+
       for (const field of DATE_FIELDS) {
         if (game[field]) game[field] = new Date(game[field]);
       }
       gameManager.games.set(game.id, game);
+      restored += 1;
     }
 
     const pending = Array.isArray(state.pendingGames) ? state.pendingGames : [];
@@ -70,7 +77,7 @@ function loadGames() {
       }
     }
 
-    console.log(`Restored ${games.length} game(s) from ${file}`);
+    console.log(`Restored ${restored} game(s) from ${file}`);
     return true;
   } catch (error) {
     console.error('Error loading game state:', error);
