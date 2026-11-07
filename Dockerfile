@@ -7,14 +7,11 @@ WORKDIR /app
 # Copy package files first for better caching
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install --production
-
 # Copy all source files
 COPY . .
 
-# Remove unnecessary files
-RUN rm -rf node_modules && npm install --production
+# Install dependencies
+RUN npm install --production
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
