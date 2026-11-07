@@ -1,5 +1,6 @@
 const { Client, GatewayIntentBits, Collection, EmbedBuilder, ActivityType } = require('discord.js');
-const { token, botStatus } = require('../config/config');
+const config = require('../config/config');
+const { token, botStatus } = config;
 const fs = require('fs');
 const path = require('path');
 const gameManager = require('./utils/gameManager');
@@ -155,6 +156,22 @@ async function processAITurns() {
 // Error handling
 client.on('error', console.error);
 process.on('unhandledRejection', console.error);
+
+// Fail fast with a clear message when required configuration is missing,
+// instead of failing later inside discord.js with an obscure error
+const missingConfig = [
+  ['DISCORD_TOKEN', config.token],
+  ['CLIENT_ID', config.clientId],
+  ['GUILD_ID', config.guildId],
+].filter(([name, value]) => !value).map(([name]) => name);
+
+if (missingConfig.length > 0) {
+  console.error(
+    `Missing required environment variable(s): ${missingConfig.join(', ')}. ` +
+      'Set them in your .env file (see .env.example) and restart the bot.'
+  );
+  process.exit(1);
+}
 
 // Login to Discord with your client's token
 client.login(token).then(() => {
