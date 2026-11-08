@@ -86,7 +86,7 @@ class UNOBot {
     await this.delay(this.getThinkTime(bot.difficulty));
 
     const topCard = game.discardPile[game.discardPile.length - 1];
-    const playableCards = this.getPlayableCards(bot.cards, topCard, game);
+    const playableCards = this.getPlayableCards(bot.cards, topCard);
 
     // Strategy based on difficulty
     let move;
@@ -294,37 +294,14 @@ class UNOBot {
    * Get cards that can be played
    * @param {Array} cards - Player's cards
    * @param {Object} topCard - Top card of discard pile
-   * @param {Object} game - The game instance
    * @returns {Array} Playable cards
    */
-  getPlayableCards(cards, topCard, game) {
+  getPlayableCards(cards, topCard) {
     if (!topCard) return [];
 
-    return cards.filter(card => {
-      // Wild cards can always be played
-      if (card.type === 'wild' || card.type === 'wild4') {
-        return true;
-      }
-
-      // Matching color
-      if (card.color === topCard.color) {
-        return true;
-      }
-
-      // Matching value (for number cards)
-      if (card.value && topCard.value && card.value === topCard.value) {
-        return true;
-      }
-
-      // Matching type (for special cards like draw2, skip, reverse)
-      // Special cards can only match by type if they have the same color
-      // Actually, special cards match by color OR by type
-      if (card.type === topCard.type && card.type !== 'number') {
-        return true;
-      }
-
-      return false;
-    });
+    // Delegate to the shared playability rules so the AI and human players
+    // always follow exactly the same matching logic
+    return cards.filter(card => cardDeck.canPlayCard(card, topCard));
   }
 
   /**

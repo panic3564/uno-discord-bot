@@ -347,8 +347,10 @@ The bot follows standard UNO rules:
   - **Draw 2**: Next player draws 2 cards and loses their turn
   - **Wild**: Choose any color (including the current one)
   - **Wild Draw 4**: Choose any color, next player draws 4 cards and loses their turn
+- Unlike official UNO, Wild Draw 4 may be played at any time, even if you hold a matching color (house rule)
 - When a player has one card left, they must say "UNO"
 - If a player forgets to say UNO, the player whose turn it is can call them out with `/uno-calluno` (2-card penalty)
+- AI bots also say UNO; occasionally a bot forgets and can then be called out with `/uno-calluno` before its next turn
 - First player to get rid of all their cards wins!
 
 ## Team Mode

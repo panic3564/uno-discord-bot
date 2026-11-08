@@ -27,6 +27,29 @@ function getStatsFile() {
 }
 
 /**
+ * Create a fresh statistics record with every counter at zero
+ * @returns {Object} A new statistics record
+ */
+function createDefaultRecord() {
+  return {
+    gamesPlayed: 0,
+    gamesWon: 0,
+    teamGamesPlayed: 0,
+    teamGamesWon: 0,
+    plus2Received: 0,
+    plus4Received: 0,
+    skipsReceived: 0,
+    cardsDrawn: 0,
+    cardsPlayed: 0,
+    wildsPlayed: 0,
+    unoCalls: 0,
+    calloutsMade: 0,
+    calledOutCount: 0,
+    fastestWinMs: null,
+  };
+}
+
+/**
  * Get (or lazily create) the statistics record for a user
  * @param {string} userId - Discord user ID
  * @returns {Object} The user's statistics record
@@ -34,22 +57,7 @@ function getStatsFile() {
 function getOrCreate(userId) {
   let record = stats.get(userId);
   if (!record) {
-    record = {
-      gamesPlayed: 0,
-      gamesWon: 0,
-      teamGamesPlayed: 0,
-      teamGamesWon: 0,
-      plus2Received: 0,
-      plus4Received: 0,
-      skipsReceived: 0,
-      cardsDrawn: 0,
-      cardsPlayed: 0,
-      wildsPlayed: 0,
-      unoCalls: 0,
-      calloutsMade: 0,
-      calledOutCount: 0,
-      fastestWinMs: null,
-    };
+    record = createDefaultRecord();
     stats.set(userId, record);
   }
   return record;
@@ -238,7 +246,9 @@ function loadStats() {
     let restored = 0;
     for (const [userId, record] of entries) {
       if (!userId || !record) continue;
-      stats.set(userId, record);
+      // Merge over the default shape so records saved by an older version
+      // do not surface undefined counters in /uno-stats
+      stats.set(userId, { ...createDefaultRecord(), ...record });
       restored += 1;
     }
 

@@ -103,3 +103,25 @@ test('saveStats writes the record to the configured file', () => {
     fs.rmSync(file, { force: true });
   }
 });
+
+test('loadStats merges partial records over the default shape', () => {
+  const file = path.join(os.tmpdir(), 'stats-test-load-' + process.pid + '.json');
+  const previous = process.env.STATS_FILE;
+  process.env.STATS_FILE = file;
+  try {
+    fs.writeFileSync(file, JSON.stringify({ stats: [['stats-user-10', { gamesPlayed: 3, gamesWon: 1 }]] }));
+    stats.loadStats();
+    const record = stats.getUserStats('stats-user-10');
+    assert.equal(record.gamesPlayed, 3);
+    assert.equal(record.gamesWon, 1);
+    assert.equal(record.cardsPlayed, 0);
+    assert.equal(record.fastestWinMs, null);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.STATS_FILE;
+    } else {
+      process.env.STATS_FILE = previous;
+    }
+    fs.rmSync(file, { force: true });
+  }
+});

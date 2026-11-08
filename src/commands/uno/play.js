@@ -125,6 +125,8 @@ module.exports = {
       activeGame.winner = userPlayer;
       // Route through endGame so endedAt is set and the cleanup timer starts
       gameManager.endGame(activeGame.id);
+      // Refresh the thread status message so it reflects the finished game
+      await gameManager.updateStatusMessage(activeGame.id, interaction.client);
 
       const embed = new EmbedBuilder()
         .setColor('#FFD700')
@@ -151,7 +153,7 @@ module.exports = {
       .setTimestamp();
 
     // Send to thread if available
-    const threadChannel = activeGame.threadId ? await interaction.channel.threads.fetch(activeGame.threadId).catch(() => null) : null;
+    const threadChannel = activeGame.threadId ? await interaction.client.channels.fetch(activeGame.threadId).catch(() => null) : null;
     if (threadChannel) {
       await threadChannel.send({ embeds: [embed] });
       // Update the status message
@@ -159,12 +161,6 @@ module.exports = {
       await interaction.reply({ content: 'Card played! See the game thread.', ephemeral: true });
     } else {
       await interaction.reply({ embeds: [embed] });
-    }
-
-    // If next player is AI, trigger AI turn after a delay
-    const nextPlayer = gameManager.getCurrentPlayer(activeGame.id);
-    if (nextPlayer && nextPlayer.type === 'ai') {
-      // AI will be processed by the interval in index.js
     }
   },
 };

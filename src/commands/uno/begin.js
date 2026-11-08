@@ -64,6 +64,12 @@ module.exports = {
       return `${p.type === 'ai' ? '🤖' : '👤'} ${name} - ${p.cards ? p.cards.length : 0} cards`;
     }).join('\n');
 
+    // Display the current player correctly for both humans and AI
+    const current = allPlayers[game.currentPlayer];
+    const currentPlayerDisplay = current
+      ? (current.type === 'ai' ? `${current.avatar} ${current.name}` : `<@${current.id}>`)
+      : 'Unknown';
+
     const embed = new EmbedBuilder()
       .setColor('#0000FF')
       .setTitle('🎲 UNO Game Started!')
@@ -71,14 +77,14 @@ module.exports = {
         `🃏 **Top Card:** ${cardDeck.getCardDisplayName(topCard)}\n` +
         `📍 **Game Thread:** <#${game.threadId}>\n\n` +
         `**Players:**\n${playerList}\n\n` +
-        `Current turn: <@${allPlayers[game.currentPlayer]?.id}> or ${allPlayers[game.currentPlayer]?.name}`
+        `Current turn: ${currentPlayerDisplay}`
       )
       .setTimestamp();
 
     // Add all players to the thread
     if (game.threadId) {
       try {
-        const threadChannel = await interaction.channel.threads.fetch(game.threadId).catch(() => null);
+        const threadChannel = await interaction.client.channels.fetch(game.threadId).catch(() => null);
         if (threadChannel) {
           // Add all human players to thread
           for (const player of allPlayers) {
@@ -99,7 +105,7 @@ module.exports = {
     // Post start notification in thread
     if (game.threadId) {
       try {
-        const threadChannel = await interaction.channel.threads.fetch(game.threadId).catch(() => null);
+        const threadChannel = await interaction.client.channels.fetch(game.threadId).catch(() => null);
         if (threadChannel) {
           const startEmbed = new EmbedBuilder()
             .setColor('#00FF00')
@@ -107,7 +113,7 @@ module.exports = {
             .setDescription(`<@${userId}> has started the game!\n\n` +
               `\ud83c\udccf **Top Card:** ${cardDeck.getCardDisplayName(topCard)}\n` +
               `**Players:**\n${playerList}\n\n` +
-              `Current turn: <@${allPlayers[game.currentPlayer]?.id}> or ${allPlayers[game.currentPlayer]?.name}`
+              `Current turn: ${currentPlayerDisplay}`
             )
             .setTimestamp();
           await threadChannel.send({ embeds: [startEmbed] });

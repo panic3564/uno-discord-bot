@@ -571,6 +571,13 @@ class GameManager {
     // If current player is not a bot, don't process
     if (!currentPlayer || currentPlayer.type !== 'ai') return null;
 
+    // A bot that reached its next turn still holding one card and having
+    // forgotten to say UNO now remembers, so the callout window spans one
+    // full round
+    if (currentPlayer.cards.length === 1 && !currentPlayer.saidUno) {
+      currentPlayer.saidUno = true;
+    }
+
     // Get the bot's move
     const move = await unoBot.makeMove(game, currentPlayer, client);
 
@@ -610,7 +617,9 @@ class GameManager {
 
       // Check if bot has one card left
       if (currentPlayer.cards.length === 1) {
-        currentPlayer.saidUno = true;
+        // Bots usually say UNO right away, but occasionally forget for a
+        // full round, giving other players a chance to call them out
+        currentPlayer.saidUno = Math.random() < 0.75;
       }
 
       // Check if bot won
