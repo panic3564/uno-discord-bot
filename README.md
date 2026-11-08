@@ -15,6 +15,8 @@ A feature-rich Discord bot that allows users to play the popular card game **UNO
 - ✅ Teammates can view each other's hands
 - ✅ UNO call-out feature with 2-card penalty
 - ✅ Docker support with automatic builds
+- ✅ Automatic game start when full or after a configurable timeout
+- ✅ Game state persists across restarts
 
 ## Configuration
 
@@ -26,9 +28,11 @@ The bot uses the following environment variables:
 |----------|----------|---------|-------------|
 | `DISCORD_TOKEN` | ✅ Yes | - | Your Discord bot token from the Developer Portal |
 | `CLIENT_ID` | ✅ Yes | - | Your bot's Client ID from the Developer Portal |
-| `GUILD_ID` | ❌ No | - | Server ID for testing slash commands (optional) |
+| `GUILD_ID` | ✅ Yes | - | Your server ID; slash commands register instantly in this server (global registration happens as well) |
 | `BOT_NAME` | ❌ No | `UNO Discord Bot` | Bot display name |
 | `BOT_STATUS` | ❌ No | `Playing UNO with you!` | Bot status message |
+| `GAME_START_TIMEOUT_MINUTES` | ❌ No | `2` | Minutes before a waiting game auto-starts (whole numbers only) |
+| `PERSISTENCE_FILE` | ❌ No | `./data/games.json` | Path where game state is saved so restarts do not lose games |
 
 > **⚠ Important:** On startup, this bot will **overwrite all existing slash commands** for your bot application. This means any slash commands not defined in this repository's `src/commands/` directory will be removed. If you have other bots or commands registered to the same application, they will be deleted. Use a dedicated Discord application for this bot.
 
@@ -58,7 +62,6 @@ The bot uses the following environment variables:
    - View Channels
    - Read Message History
    - Use Slash Commands
-   - Add Reactions
 4. Copy the generated URL
 5. Open the URL in your browser and select your server
 6. Authorize the bot to join your server
@@ -68,7 +71,7 @@ The bot uses the following environment variables:
 Note down the following from your Discord Developer Portal:
 - **Bot Token** (from Step 1)
 - **Client ID** (found in the "General Information" tab)
-- **Guild ID** (your server ID, optional for testing)
+- **Guild ID** (your server ID, required)
 
 You will need these for the next steps.
 
@@ -95,7 +98,7 @@ Choose one of the following methods to run the bot:
    ```
    DISCORD_TOKEN=your_bot_token_from_step_1
    CLIENT_ID=your_bot_client_id
-   GUILD_ID=your_server_id_for_testing
+   GUILD_ID=your_server_id
    BOT_NAME=UNO Discord Bot
    BOT_STATUS=Playing UNO with you!
    ```
@@ -153,6 +156,7 @@ This will:
 - Build the Docker image
 - Start the container
 - Run the bot in detached mode
+- Persist game state to `./data` so games survive restarts
 
 #### Step 7: View logs
 
@@ -169,7 +173,8 @@ docker-compose down
 #### Step 9: Update the bot
 
 ```bash
-docker-compose pull && docker-compose up -d
+git pull
+docker-compose up -d --build
 ```
 
 ---
@@ -194,6 +199,7 @@ docker run -d \
   -e GUILD_ID=your_guild_id \
   -e BOT_NAME="UNO Discord Bot" \
   -e BOT_STATUS="Playing UNO with you!" \
+  -v ./data:/app/data \
   ghcr.io/panic3564/uno-discord-bot:main
 ```
 
@@ -215,6 +221,7 @@ services:
       - BOT_STATUS=${BOT_STATUS:-Playing UNO with you!}
     volumes:
       - ./logs:/app/logs
+      - ./data:/app/data
 ```
 
 Then run:
@@ -231,13 +238,15 @@ docker-compose up -d
 
 All commands start with `/` and are available in any channel where the bot has permissions.
 
+When a game starts, the bot creates a dedicated thread for it. Game commands work both in the original channel and inside that game thread.
+
 #### Game Setup Commands
 
 | Command | Description |
 |---------|-------------|
 | `/uno-start players:<number> [bots:<number>] [difficulty:<easy/medium/hard>] [teams:<true/false>]` | Create a new UNO game with human players and optional AI bots |
 | `/uno-join` | Join an existing waiting game |
-| `/uno-begin` | Start the game once all players are ready |
+| `/uno-begin` | Start the game once all players are ready (games also start automatically; see below) |
 | `/uno-addbot count:<number> [difficulty:<easy/medium/hard>]` | Add AI bots to a waiting game |
 | `/uno-removebot count:<number>` | Remove AI bots from a waiting game |
 | `/uno-status` | Check the current game status |
@@ -259,6 +268,10 @@ All commands start with `/` and are available in any channel where the bot has p
 |---------|-------------|
 | `/ping` | Check if the bot is online |
 | `/help` | List all available commands |
+
+### Automatic Start
+
+Games do not require `/uno-begin`: a waiting game starts automatically once it is full, or when the timeout configured by `GAME_START_TIMEOUT_MINUTES` (default: 2 minutes) expires. `/uno-begin` simply starts it immediately.
 
 ### Examples
 
@@ -319,12 +332,12 @@ The bot follows standard UNO rules:
 - Players take turns playing cards that match the top card by color, number, or symbol
 - Special cards:
   - **Skip**: Next player loses their turn
-  - **Reverse**: Changes the direction of play
+  - **Reverse**: Changes the direction of play (in a two-player game it acts as a Skip)
   - **Draw 2**: Next player draws 2 cards and loses their turn
   - **Wild**: Choose any color (including the current one)
   - **Wild Draw 4**: Choose any color, next player draws 4 cards and loses their turn
 - When a player has one card left, they must say "UNO"
-- If a player forgets to say UNO, the next player can call them out with `/uno-calluno` (2-card penalty)
+- If a player forgets to say UNO, the player whose turn it is can call them out with `/uno-calluno` (2-card penalty)
 - First player to get rid of all their cards wins!
 
 ## Team Mode
@@ -336,6 +349,7 @@ When team mode is enabled:
 - Teammates can view each other's hands using `/uno-hand player:@teammate`
 - Requires an even number of players (minimum 4)
 - Teams cannot be adjacent (always separated by opponents)
+- The win condition remains individual: the first player to run out of cards wins, even in team mode
 
 ## AI Difficulty Levels
 
@@ -364,13 +378,13 @@ Choose the difficulty when starting a game or adding bots:
 
 ### Commands not showing up
 
-- Wait a few minutes for commands to register globally
-- Or specify a `GUILD_ID` in your `.env` file for instant testing in that server
+- Commands register instantly in the server specified by `GUILD_ID`
+- Global registration can take a few minutes to propagate
 - Make sure the bot has the "Use Slash Commands" permission
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please feel free to submit a Pull Request. Before submitting, run `npm test` and `npm run lint` to confirm the test suite and the linter pass.
 
 ## License
 
