@@ -3,6 +3,7 @@
  * Manages active UNO games and their state
  */
 
+const crypto = require('crypto');
 const unoBot = require('./unoBot');
 const cardDeck = require('./cardDeck');
 
@@ -27,7 +28,7 @@ class GameManager {
    */
   createGame(guildId, options) {
     const game = {
-      id: `${guildId}-${Date.now()}`,
+      id: `${guildId}-${crypto.randomUUID()}`,
       guildId,
       channelId: options.channelId || null,
       threadId: null,
