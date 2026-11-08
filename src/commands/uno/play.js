@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const gameManager = require('../../utils/gameManager');
 const cardDeck = require('../../utils/cardDeck');
+const stats = require('../../utils/stats');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -109,6 +110,9 @@ module.exports = {
 
     // Add card to discard pile
     activeGame.discardPile.push(selectedCard);
+
+    // Track play statistics
+    stats.recordCardPlayed(userId, selectedCard);
 
     // Check if player has one card left (UNO!)
     if (userPlayer.cards.length === 1) {

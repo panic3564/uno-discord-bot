@@ -14,7 +14,7 @@ const DEFAULT_FILE = path.join(process.cwd(), 'data', 'games.json');
 
 // Date-valued game fields, serialized as ISO strings by JSON.stringify
 // and revived when the state is restored
-const DATE_FIELDS = ['createdAt', 'lastAction', 'endedAt'];
+const DATE_FIELDS = ['createdAt', 'startedAt', 'lastAction', 'endedAt'];
 
 /**
  * Get the file path used to persist game state

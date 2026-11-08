@@ -6,6 +6,7 @@
 const crypto = require('crypto');
 const unoBot = require('./unoBot');
 const cardDeck = require('./cardDeck');
+const stats = require('./stats');
 
 class GameManager {
   constructor() {
@@ -412,6 +413,7 @@ class GameManager {
 
     game.status = 'playing';
     game.lastAction = new Date();
+    game.startedAt = new Date(); // Used to compute the fastest-win statistic
     game.currentPlayer = 0; // Start with the first player (index 0)
 
     // Assign teams if team mode is enabled
@@ -530,8 +532,14 @@ class GameManager {
     const game = this.getGame(gameId);
     if (!game) return false;
 
+    const wasFinished = game.status === 'finished';
     game.status = 'finished';
     game.endedAt = new Date();
+
+    // Update per-player statistics exactly once, for every human participant
+    if (!wasFinished) {
+      stats.recordGameFinished(game);
+    }
 
     // Clean up after some time
     setTimeout(() => {
@@ -664,24 +672,36 @@ class GameManager {
       const drawCount = card.type === 'wild4' ? 4 : 2;
       const victim = this.getCurrentPlayer(game.id);
       if (victim && victim.cards) {
+        let drawn = 0;
         for (let i = 0; i < drawCount; i++) {
           const drawnCard = cardDeck.drawCard(game.deck, game.discardPile);
           if (drawnCard) {
             victim.cards.push(drawnCard);
+            drawn += 1;
           }
         }
+        // Track the penalty and the cards actually drawn
+        stats.recordPenalty(victim, card.type, drawn);
       }
       this.moveToNextPlayer(game);
     }
 
     // Skip: the next player loses their turn
     if (card.type === 'skip') {
+      const skipped = this.getCurrentPlayer(game.id);
+      if (skipped && skipped.type === 'human') {
+        stats.recordSkip(skipped.id);
+      }
       this.moveToNextPlayer(game);
     }
 
     // In a two-player game, reverse acts as a skip: the same player plays again
     const totalPlayers = game.players.length + game.bots.length;
     if (card.type === 'reverse' && totalPlayers === 2) {
+      const skipped = this.getCurrentPlayer(game.id);
+      if (skipped && skipped.type === 'human') {
+        stats.recordSkip(skipped.id);
+      }
       this.moveToNextPlayer(game);
     }
 

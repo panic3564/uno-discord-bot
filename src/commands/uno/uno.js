@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const gameManager = require('../../utils/gameManager');
+const stats = require('../../utils/stats');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -54,6 +55,9 @@ module.exports = {
 
     // Mark that they said UNO
     userPlayer.saidUno = true;
+
+    // Track the UNO call statistic
+    stats.recordUnoCall(userId);
 
     const embed = new EmbedBuilder()
       .setColor('#FFFF00')

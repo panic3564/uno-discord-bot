@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const gameManager = require('../../utils/gameManager');
 const cardDeck = require('../../utils/cardDeck');
+const stats = require('../../utils/stats');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -89,12 +90,18 @@ module.exports = {
     calledPlayerObj.wasCalledOut = true; // Flag that they were called out
 
     // Draw 2 cards as penalty
+    let penaltyDrawn = 0;
     for (let i = 0; i < 2; i++) {
       const card = cardDeck.drawCard(activeGame.deck, activeGame.discardPile);
       if (card) {
         calledPlayerObj.cards.push(card);
+        penaltyDrawn += 1;
       }
     }
+
+    // Track statistics: the caller made a successful callout and the called
+    // player was caught and picked up penalty cards
+    stats.recordCallout(userId, calledPlayerObj, penaltyDrawn);
 
     const embed = new EmbedBuilder()
       .setColor('#FF0000')
