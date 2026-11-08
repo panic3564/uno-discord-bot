@@ -535,7 +535,11 @@ class GameManager {
     // Clean up after some time
     setTimeout(() => {
       this.games.delete(gameId);
-      this.pendingGames.delete(game.guildId);
+      // Only clear the guild's pending entry if it still points at this game;
+      // a newer waiting game in the same guild may now own it
+      if (this.pendingGames.get(game.guildId) === gameId) {
+        this.pendingGames.delete(game.guildId);
+      }
     }, 3600000); // 1 hour
 
     return true;
