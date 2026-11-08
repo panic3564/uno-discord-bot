@@ -7,6 +7,7 @@ const gameManager = require('./utils/gameManager');
 const unoBot = require('./utils/unoBot');
 const cardDeck = require('./utils/cardDeck');
 const persistence = require('./utils/persistence');
+const stats = require('./utils/stats');
 
 // Create a new client instance
 const client = new Client({
@@ -191,6 +192,9 @@ client.login(token).then(() => {
   // Restore games saved before the last shutdown so a restart does not lose them
   persistence.loadGames();
 
+  // Restore player statistics saved before the last shutdown
+  stats.loadStats();
+
   // Rebuild the auto-start timer for restored games still waiting for
   // players; timers cannot be persisted, so they are restarted on startup
   for (const game of gameManager.getAllGames()) {
@@ -205,7 +209,10 @@ client.login(token).then(() => {
 
   // Periodically persist the game state so an unexpected crash loses at
   // most one interval of progress
-  saveInterval = setInterval(() => persistence.saveGames(), 30000);
+  saveInterval = setInterval(() => {
+    persistence.saveGames();
+    stats.saveStats();
+  }, 30000);
   console.log('Game state autosave started');
 }).catch((error) => {
   console.error('Failed to login:', error);
@@ -219,8 +226,9 @@ process.on('SIGINT', () => {
   if (saveInterval) {
     clearInterval(saveInterval);
   }
-  // Persist the game state before shutting down
+  // Persist the game state and player statistics before shutting down
   persistence.saveGames();
+  stats.saveStats();
   client.destroy();
   process.exit(0);
 });
@@ -232,8 +240,9 @@ process.on('SIGTERM', () => {
   if (saveInterval) {
     clearInterval(saveInterval);
   }
-  // Persist the game state before shutting down
+  // Persist the game state and player statistics before shutting down
   persistence.saveGames();
+  stats.saveStats();
   client.destroy();
   process.exit(0);
 });

@@ -17,6 +17,7 @@ A feature-rich Discord bot that allows users to play the popular card game **UNO
 - ✅ Docker support with automatic builds
 - ✅ Automatic game start when full or after a configurable timeout
 - ✅ Game state persists across restarts
+- ✅ Player statistics with `/uno-stats`: games, wins, team games, bad luck, and card totals
 
 ## Configuration
 
@@ -33,6 +34,7 @@ The bot uses the following environment variables:
 | `BOT_STATUS` | ❌ No | `Playing UNO with you!` | Bot status message |
 | `GAME_START_TIMEOUT_MINUTES` | ❌ No | `2` | Minutes before a waiting game auto-starts (whole numbers only) |
 | `PERSISTENCE_FILE` | ❌ No | `./data/games.json` | Path where game state is saved so restarts do not lose games |
+| `STATS_FILE` | ❌ No | `./data/stats.json` | Path where player statistics are saved |
 
 > **⚠ Important:** On startup, this bot will **overwrite all existing slash commands** for your bot application. This means any slash commands not defined in this repository's `src/commands/` directory will be removed. If you have other bots or commands registered to the same application, they will be deleted. Use a dedicated Discord application for this bot.
 
@@ -266,6 +268,7 @@ When a game starts, the bot creates a dedicated thread for it. Game commands wor
 
 | Command | Description |
 |---------|-------------|
+| `/uno-stats [player:<@user>]` | View UNO statistics for yourself or another player (visible to everyone) |
 | `/ping` | Check if the bot is online |
 | `/help` | List all available commands |
 
@@ -323,6 +326,14 @@ Call out Bob for forgetting to say UNO (2-card penalty).
 /uno-status
 ```
 Shows the current game state, including players, card counts, teams, and the top card.
+
+#### Viewing Player Statistics
+
+```
+/uno-stats
+```
+
+Shows games played and won, team games, fastest win, bad luck (Draw 2s and Wild Draw 4s received, times skipped, caught without saying UNO), and card totals. Use `/uno-stats player:@Bob` to view another player's stats. The message is visible to everyone, and statistics persist across restarts.
 
 ## Game Rules
 

@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const gameManager = require('../../utils/gameManager');
 const cardDeck = require('../../utils/cardDeck');
+const stats = require('../../utils/stats');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -73,6 +74,9 @@ module.exports = {
 
     userPlayer.cards.push(card);
     activeGame.lastAction = new Date();
+
+    // Track draw statistics
+    stats.recordCardsDrawn(userId, 1);
 
     // Check if the drawn card is playable
     const isPlayable = cardDeck.canPlayCard(card, topCard);
