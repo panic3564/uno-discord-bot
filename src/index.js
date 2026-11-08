@@ -90,7 +90,18 @@ async function processAITurns() {
       const move = await gameManager.processAITurn(game.id, client);
       
       if (move) {
-        console.log(`AI ${currentPlayer.name} made move: ${move.action}`);
+        // Debug log for the container console: the move plus the bot's hand.
+        // Deliberately not sent to Discord so players cannot see what the AI holds.
+        const handDisplay = (currentPlayer.cards || [])
+          .map(c => cardDeck.getCardDisplayName(c))
+          .join(', ');
+        if (move.action === 'play') {
+          console.log(`AI ${currentPlayer.name} played ${cardDeck.getCardDisplayName(move.data.card)} - remaining hand (${currentPlayer.cards.length}): [${handDisplay}]`);
+        } else if (move.action === 'draw') {
+          console.log(`AI ${currentPlayer.name} drew ${move.data.card ? cardDeck.getCardDisplayName(move.data.card) : 'nothing (deck exhausted)'} - hand (${currentPlayer.cards.length}): [${handDisplay}]`);
+        } else {
+          console.log(`AI ${currentPlayer.name} made move: ${move.action} - hand (${currentPlayer.cards.length}): [${handDisplay}]`);
+        }
         
         // Send message to channel or thread about AI's move
         // Try thread first, then fall back to channel
@@ -100,14 +111,6 @@ async function processAITurns() {
           if (channel) {
             const topCard = game.discardPile[game.discardPile.length - 1];
             let messageContent;
-
-            // Format a hand for the AI move log: each card with emoji, comma-separated
-            const formatHand = (cards) =>
-              cards.map(c => `**${cardDeck.getCardDisplayName(c)}** ${cardDeck.getCardEmoji(c)}`).join(', ');
-            // Describe the AI's remaining hand after its move
-            const handLine = currentPlayer.cards && currentPlayer.cards.length > 0
-              ? `\n**${currentPlayer.name}'s hand (${currentPlayer.cards.length}):** ${formatHand(currentPlayer.cards)}`
-              : '';
             
             if (move.action === 'play') {
               const card = move.data.card;
@@ -130,13 +133,9 @@ async function processAITurns() {
                   `<@${drawPlayer.id}>` : drawPlayer?.name || 'next player';
                 cardDisplay += ` - ${drawPlayerName} draws 4 cards and loses their turn`;
               }
-              messageContent = `${unoBot.getDisplayName(currentPlayer)} played **${cardDisplay}**${handLine}`;
+              messageContent = `${unoBot.getDisplayName(currentPlayer)} played **${cardDisplay}**`;
             } else if (move.action === 'draw') {
-              const drawnCard = move.data.card;
-              const drawnDisplay = drawnCard
-                ? `**${cardDeck.getCardDisplayName(drawnCard)} ${cardDeck.getCardEmoji(drawnCard)}**`
-                : 'a card';
-              messageContent = `${unoBot.getDisplayName(currentPlayer)} drew ${drawnDisplay}${handLine}`;
+              messageContent = `${unoBot.getDisplayName(currentPlayer)} drew a card`;
             } else if (move.action === 'win') {
               messageContent = `🎉 ${unoBot.getDisplayName(currentPlayer)} wins the game! 🎉`;
             }
