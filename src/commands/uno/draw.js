@@ -81,24 +81,35 @@ module.exports = {
     // Check if the drawn card is playable
     const isPlayable = cardDeck.canPlayCard(card, topCard);
 
-    const embed = new EmbedBuilder()
+    // Private embed: only the player who drew sees which card it was
+    const privateEmbed = new EmbedBuilder()
       .setColor('#00FFFF')
       .setTitle('📥 Card Drawn!')
-      .setDescription(`**${userPlayer.name || userPlayer.id}** drew **${cardDeck.getCardDisplayName(card)}** ${cardDeck.getCardEmoji(card)}`)
+      .setDescription(`You drew **${cardDeck.getCardDisplayName(card)}** ${cardDeck.getCardEmoji(card)}`)
       .addFields(
         { name: 'Cards Left', value: `${userPlayer.cards.length}`, inline: true },
         { name: 'Playable?', value: isPlayable ? '✅ Yes! You can play this card.' : '❌ No', inline: true }
       )
       .setTimestamp();
 
+    // Public embed for the thread: the identity of the drawn card stays private
+    const publicEmbed = new EmbedBuilder()
+      .setColor('#00FFFF')
+      .setTitle('📥 Card Drawn!')
+      .setDescription(`**${userPlayer.name || userPlayer.id}** drew a card`)
+      .addFields(
+        { name: 'Cards Left', value: `${userPlayer.cards.length}`, inline: true }
+      )
+      .setTimestamp();
+
     // Send to thread if available
     const threadChannel = activeGame.threadId ? await interaction.channel.threads.fetch(activeGame.threadId).catch(() => null) : null;
     if (threadChannel) {
-      await threadChannel.send({ embeds: [embed] });
+      await threadChannel.send({ embeds: [publicEmbed] });
       // Update the status message
       await gameManager.updateStatusMessage(activeGame.id, interaction.client);
     }
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply({ embeds: [privateEmbed], ephemeral: true });
 
     // If the drawn card is playable and it's still their turn, they can play it
     if (isPlayable) {
