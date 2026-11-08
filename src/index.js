@@ -100,6 +100,14 @@ async function processAITurns() {
           if (channel) {
             const topCard = game.discardPile[game.discardPile.length - 1];
             let messageContent;
+
+            // Format a hand for the AI move log: each card with emoji, comma-separated
+            const formatHand = (cards) =>
+              cards.map(c => `**${cardDeck.getCardDisplayName(c)}** ${cardDeck.getCardEmoji(c)}`).join(', ');
+            // Describe the AI's remaining hand after its move
+            const handLine = currentPlayer.cards && currentPlayer.cards.length > 0
+              ? `\n**${currentPlayer.name}'s hand (${currentPlayer.cards.length}):** ${formatHand(currentPlayer.cards)}`
+              : '';
             
             if (move.action === 'play') {
               const card = move.data.card;
@@ -122,9 +130,13 @@ async function processAITurns() {
                   `<@${drawPlayer.id}>` : drawPlayer?.name || 'next player';
                 cardDisplay += ` - ${drawPlayerName} draws 4 cards and loses their turn`;
               }
-              messageContent = `${unoBot.getDisplayName(currentPlayer)} played **${cardDisplay}**`;
+              messageContent = `${unoBot.getDisplayName(currentPlayer)} played **${cardDisplay}**${handLine}`;
             } else if (move.action === 'draw') {
-              messageContent = `${unoBot.getDisplayName(currentPlayer)} drew a card`;
+              const drawnCard = move.data.card;
+              const drawnDisplay = drawnCard
+                ? `**${cardDeck.getCardDisplayName(drawnCard)} ${cardDeck.getCardEmoji(drawnCard)}**`
+                : 'a card';
+              messageContent = `${unoBot.getDisplayName(currentPlayer)} drew ${drawnDisplay}${handLine}`;
             } else if (move.action === 'win') {
               messageContent = `🎉 ${unoBot.getDisplayName(currentPlayer)} wins the game! 🎉`;
             }
