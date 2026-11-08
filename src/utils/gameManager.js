@@ -607,8 +607,9 @@ class GameManager {
 
       // Check if bot won
       if (currentPlayer.cards.length === 0) {
-        game.status = 'finished';
         game.winner = currentPlayer;
+        // Route through endGame so endedAt is set and the cleanup timer starts
+        this.endGame(game.id);
         return { action: 'win', data: { player: currentPlayer, color } };
       }
 

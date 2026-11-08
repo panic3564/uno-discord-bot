@@ -118,8 +118,9 @@ module.exports = {
 
     // Check if player won
     if (userPlayer.cards.length === 0) {
-      activeGame.status = 'finished';
       activeGame.winner = userPlayer;
+      // Route through endGame so endedAt is set and the cleanup timer starts
+      gameManager.endGame(activeGame.id);
 
       const embed = new EmbedBuilder()
         .setColor('#FFD700')
