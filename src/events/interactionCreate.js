@@ -2,7 +2,7 @@ const { Events, Collection } = require('discord.js');
 
 // Minimum interval in milliseconds between commands from the same user,
 // to prevent command spamming
-const COMMAND_COOLDOWN_MS = 2000;
+const COMMAND_COOLDOWN_MS = 1000;
 const lastCommandAt = new Collection();
 
 module.exports = {
