@@ -819,6 +819,8 @@ class GameManager {
     
     if (totalPlayers < 2) {
       console.log(`Cannot auto-start game ${gameId}: not enough players (${totalPlayers})`);
+      // The game can never start; remove it so it does not block the channel
+      await this.cancelWaitingGame(gameId, client, 'Not enough players joined in time - the game was cancelled.');
       return;
     }
 
@@ -878,6 +880,43 @@ class GameManager {
       clearTimeout(this.gameTimers.get(gameId));
       this.gameTimers.delete(gameId);
     }
+  }
+
+  /**
+   * Cancel a waiting game that can no longer start and remove it, so that
+   * it does not block new games in its channel
+   * @param {string} gameId - The game ID
+   * @param {Object|null} client - Discord client, used to notify the thread
+   * @param {string} reason - Cancellation reason shown to players
+   * @returns {Promise<boolean>} True if the game was cancelled, false otherwise
+   */
+  async cancelWaitingGame(gameId, client, reason) {
+    const game = this.getGame(gameId);
+    if (!game || game.status !== 'waiting') return false;
+
+    game.status = 'cancelled';
+    this.cancelGameTimer(gameId);
+    this.games.delete(gameId);
+    if (this.pendingGames.get(game.guildId) === gameId) {
+      this.pendingGames.delete(game.guildId);
+    }
+
+    // Tell the thread why the game disappeared
+    if (game.threadId && client) {
+      try {
+        const channel = await client.channels.fetch(game.channelId).catch(() => null);
+        const threadChannel = channel
+          ? await channel.threads.fetch(game.threadId).catch(() => null)
+          : null;
+        if (threadChannel) {
+          await threadChannel.send(`🚫 ${reason}`);
+        }
+      } catch (error) {
+        console.error(`Error posting cancellation for ${gameId}:`, error);
+      }
+    }
+
+    return true;
   }
 
   /**
