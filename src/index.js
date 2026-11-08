@@ -78,7 +78,37 @@ async function processAITurns() {
       if (game.status !== 'playing') continue;
 
       const currentPlayer = gameManager.getCurrentPlayer(game.id);
-      if (!currentPlayer || currentPlayer.type !== 'ai') continue;
+      if (!currentPlayer) continue;
+
+      // Human players are subject to the per-turn timeout: an absent player
+      // draws a card and is skipped so the game cannot stall indefinitely
+      if (currentPlayer.type === 'human') {
+        const skipped = gameManager.enforceTurnTimeout(game.id);
+        if (skipped) {
+          console.log(`Turn timeout: ${skipped.player.id} did not play in time and was skipped`);
+          const targetChannelId = game.threadId || game.channelId;
+          if (targetChannelId) {
+            const channel = await client.channels.fetch(targetChannelId).catch(() => null);
+            if (channel) {
+              const notice = skipped.drewCard
+                ? `⏰ <@${skipped.player.id}> did not play in time and was skipped - they drew a card.`
+                : `⏰ <@${skipped.player.id}> did not play in time and was skipped.`;
+              if (game.threadId) {
+                const threadChannel = await channel.threads.fetch(game.threadId).catch(() => null);
+                if (threadChannel) {
+                  await threadChannel.send(notice).catch(() => {});
+                } else {
+                  await channel.send(notice).catch(() => {});
+                }
+              } else {
+                await channel.send(notice).catch(() => {});
+              }
+              await gameManager.updateStatusMessage(game.id, client);
+            }
+          }
+        }
+        continue;
+      }
 
       // Check if it's been too long since last action (timeout)
       const now = new Date();

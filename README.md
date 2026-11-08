@@ -33,6 +33,7 @@ The bot uses the following environment variables:
 | `BOT_NAME` | ❌ No | `UNO Discord Bot` | Bot display name |
 | `BOT_STATUS` | ❌ No | `Playing UNO with you!` | Bot status message |
 | `GAME_START_TIMEOUT_MINUTES` | ❌ No | `2` | Minutes before a waiting game auto-starts (whole numbers only) |
+| `TURN_TIMEOUT_SECONDS` | ❌ No | `120` | Seconds a human player has to act before being skipped (whole numbers only) |
 | `PERSISTENCE_FILE` | ❌ No | `./data/games.json` | Path where game state is saved so restarts do not lose games |
 | `STATS_FILE` | ❌ No | `./data/stats.json` | Path where player statistics are saved |
 
@@ -275,6 +276,10 @@ When a game starts, the bot creates a dedicated thread for it. Game commands wor
 ### Automatic Start
 
 Games do not require `/uno-begin`: a waiting game starts automatically once it is full, or when the timeout configured by `GAME_START_TIMEOUT_MINUTES` (default: 2 minutes) expires. `/uno-begin` simply starts it immediately.
+
+### Turn Timeout
+
+Human players must act within the time configured by `TURN_TIMEOUT_SECONDS` (default: 120 seconds). When the timeout expires, the player draws a card and is skipped, and the game thread announces it. AI players are never subject to the timeout.
 
 ### Examples
 
