@@ -260,6 +260,7 @@ When a game starts, the bot creates a dedicated thread for it. Game commands wor
 | `/uno-hand [player:<@teammate>]` | View your current hand or a teammate's hand (in team mode) |
 | `/uno-play card-number:<number> [color:<red/blue/green/yellow>]` | Play a card from your hand |
 | `/uno-draw` | Draw a card from the deck |
+| `/uno-leave` | Leave your current game (an AI bot takes over your hand if the game is in progress) |
 | `/uno` | Say UNO when you have one card left |
 | `/uno-calluno player:<@player>` | Call out a player who forgot to say UNO |
 | `/uno-info` | Display bot information and license |
@@ -319,6 +320,14 @@ In team mode, view your teammate Charlie's hand.
 /uno-calluno player:@Bob
 ```
 Call out Bob for forgetting to say UNO (2-card penalty).
+
+#### Leaving a Game
+
+```
+/uno-leave
+```
+
+Leave your current game. If the game is still waiting, your spot is simply freed, and the game is cancelled when the last player leaves. If the game is in progress, an AI bot takes over your hand so the others can keep playing; a running game ends once no human players remain.
 
 #### Checking Game Status
 
