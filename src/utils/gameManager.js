@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const unoBot = require('./unoBot');
 const cardDeck = require('./cardDeck');
 const stats = require('./stats');
+const config = require('../../config/config');
 
 class GameManager {
   constructor() {
@@ -52,7 +53,7 @@ class GameManager {
       createdBy: options.createdBy || null,
       createdAt: new Date(),
       lastAction: new Date(),
-      turnTimeout: 30000, // 30 seconds per turn
+      turnTimeout: config.turnTimeout, // Per-turn timeout for human players
     };
 
     // Add AI bots if requested
@@ -689,6 +690,36 @@ class GameManager {
       game.currentPlayer += allPlayers.length;
     }
     game.lastAction = new Date();
+  }
+
+  /**
+   * Enforce the per-turn timeout for a human player. When the current
+   * player has not acted within game.turnTimeout, they draw a card and play
+   * moves on to the next player, so an absent player cannot stall the game
+   * forever.
+   * @param {string} gameId - The game ID
+   * @returns {Object|null} { player, drewCard } when the player was skipped,
+   * or null when no timeout applies
+   */
+  enforceTurnTimeout(gameId) {
+    const game = this.getGame(gameId);
+    if (!game || game.status !== 'playing') return null;
+
+    const currentPlayer = this.getCurrentPlayer(gameId);
+    if (!currentPlayer || currentPlayer.type !== 'human') return null;
+
+    const turnTimeout = game.turnTimeout || config.turnTimeout;
+    if (new Date() - new Date(game.lastAction) < turnTimeout) return null;
+
+    // Force the absent player to draw a card, then move on to the next player
+    const card = cardDeck.drawCard(game.deck, game.discardPile);
+    if (card) {
+      currentPlayer.cards.push(card);
+      stats.recordCardsDrawn(currentPlayer.id, 1);
+    }
+    this.moveToNextPlayer(game);
+
+    return { player: currentPlayer, drewCard: !!card };
   }
 
   /**
