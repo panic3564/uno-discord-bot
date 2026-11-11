@@ -200,6 +200,44 @@ class GameManager {
   }
 
   /**
+   * Convert a human player into an AI bot that takes over their hand, for
+   * example when they leave a running game. The bot keeps the player's
+   * position in the turn order, their cards and their UNO state.
+   * @param {string} gameId - The game ID
+   * @param {string} userId - The user ID of the player to convert
+   * @returns {Object|null} The created bot, or null when no matching human
+   * player is in a playing game
+   */
+  convertPlayerToBot(gameId, userId) {
+    const game = this.getGame(gameId);
+    if (!game || game.status !== 'playing') return null;
+
+    const index = game.players.findIndex(p => p.id === userId && p.type === 'human');
+    if (index === -1) return null;
+
+    const player = game.players[index];
+    const difficulty = unoBot.validateDifficulty(game.options.botDifficulty);
+    const bot = unoBot.createBot(game.id, game.bots.length + index, difficulty);
+
+    // Take over the hand exactly as it is, including the UNO state
+    bot.cards = player.cards;
+    bot.saidUno = player.saidUno;
+
+    // Replace the player in place so the turn order is preserved
+    game.players[index] = bot;
+
+    // Keep team membership in team mode
+    if (Array.isArray(game.teams)) {
+      const assignment = game.teams.find(t => t.playerId === userId);
+      if (assignment) {
+        assignment.playerId = bot.id;
+      }
+    }
+
+    return bot;
+  }
+
+  /**
    * Add AI bots to a game
    * @param {string} gameId - The game ID
    * @param {number} count - Number of bots to add
