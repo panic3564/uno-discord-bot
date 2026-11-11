@@ -11,11 +11,11 @@ WORKDIR /app
 # Copy package files first for better caching
 COPY package*.json ./
 
+# Install dependencies; this layer stays cached unless package files change
+RUN npm install --omit=dev
+
 # Copy all source files
 COPY . .
-
-# Install dependencies
-RUN npm install --production
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \

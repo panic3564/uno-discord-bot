@@ -60,7 +60,7 @@ module.exports = {
     // Add player to the game thread
     if (waitingGame.threadId) {
       try {
-        const threadChannel = await interaction.channel.threads.fetch(waitingGame.threadId).catch(() => null);
+        const threadChannel = await interaction.client.channels.fetch(waitingGame.threadId).catch(() => null);
         if (threadChannel) {
           await threadChannel.members.add(userId);
           // Notify in thread
