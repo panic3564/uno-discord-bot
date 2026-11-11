@@ -67,10 +67,20 @@ for (const file of eventFiles) {
 let aiTurnInterval;
 let saveInterval;
 
+// Guards against overlapping runs of processAITurns: the interval does not
+// wait for the previous pass, and a pass with several AI moves can take
+// longer than the interval, which would double-process a bot's turn
+let aiTurnsRunning = false;
+
 /**
  * Process all pending AI turns
  */
 async function processAITurns() {
+  // Without this guard, an overlapping pass could process a bot whose move is
+  // still in flight, duplicating plays and draw penalties
+  if (aiTurnsRunning) return;
+  aiTurnsRunning = true;
+
   try {
     const allGames = gameManager.getAllGames();
     
@@ -192,6 +202,8 @@ async function processAITurns() {
     }
   } catch (error) {
     console.error('Error processing AI turns:', error);
+  } finally {
+    aiTurnsRunning = false;
   }
 }
 
