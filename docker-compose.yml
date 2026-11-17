@@ -12,6 +12,12 @@ services:
       - GUILD_ID=${GUILD_ID}
       - BOT_NAME=${BOT_NAME:-UNO Discord Bot}
       - BOT_STATUS=${BOT_STATUS:-Playing UNO with you!}
+      # Pass through the remaining documented settings; without these lines
+      # docker-compose silently ignores values set in the host .env file
+      - GAME_START_TIMEOUT_MINUTES=${GAME_START_TIMEOUT_MINUTES:-2}
+      - TURN_TIMEOUT_SECONDS=${TURN_TIMEOUT_SECONDS:-120}
+      - PERSISTENCE_FILE=${PERSISTENCE_FILE:-/app/data/games.json}
+      - STATS_FILE=${STATS_FILE:-/app/data/stats.json}
     volumes:
       - ./logs:/app/logs
       - ./data:/app/data
