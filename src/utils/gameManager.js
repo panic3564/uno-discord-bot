@@ -814,43 +814,6 @@ class GameManager {
   }
 
   /**
-   * Get game state for display
-   * @param {string} gameId - The game ID
-   * @returns {Object} Game state for display
-   */
-  getGameState(gameId) {
-    const game = this.getGame(gameId);
-    if (!game) return null;
-
-    const allPlayers = this.getAllPlayers(gameId);
-    const currentPlayer = this.getCurrentPlayer(gameId);
-    const topCard = game.discardPile[game.discardPile.length - 1];
-
-    return {
-      id: game.id,
-      status: game.status,
-      currentPlayer: currentPlayer ? {
-        id: currentPlayer.id,
-        name: currentPlayer.name || `Player ${game.players.indexOf(currentPlayer.id) + 1}`,
-        type: currentPlayer.type || 'human',
-        cardCount: currentPlayer.cards ? currentPlayer.cards.length : 0,
-      } : null,
-      players: allPlayers.map(p => ({
-        id: p.id,
-        name: p.name || `Player ${game.players.indexOf(p.id) + 1}`,
-        type: p.type || 'human',
-        cardCount: p.cards ? p.cards.length : 0,
-        isBot: p.type === 'ai',
-        avatar: p.avatar || null,
-      })),
-      topCard: topCard || null,
-      direction: game.direction,
-      createdAt: game.createdAt,
-      lastAction: game.lastAction,
-    };
-  }
-
-  /**
    * Start a timer for auto-starting a game
    * @param {string} gameId - The game ID
    * @param {Object} client - Discord client
