@@ -6,18 +6,41 @@ const stats = require('../../utils/stats');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('uno-calluno')
-    .setDescription('Call out a player who forgot to say UNO')
+    .setDescription('Call out a player or AI bot who forgot to say UNO')
     .addUserOption(option =>
       option.setName('player')
-        .setDescription('The player to call out for not saying UNO')
-        .setRequired(true)
+        .setDescription('The user to call out for not saying UNO')
+        .setRequired(false)
+    )
+    .addStringOption(option =>
+      option.setName('bot')
+        .setDescription('The name of the AI bot to call out for not saying UNO')
+        .setRequired(false)
     )
     .setDMPermission(false),
   async execute(interaction) {
     const guildId = interaction.guildId;
     const userId = interaction.user.id;
     const channelId = interaction.channelId;
-    const calledPlayer = interaction.options.getUser('player');
+    const calledUser = interaction.options.getUser('player');
+    const botName = interaction.options.getString('bot');
+
+    // Exactly one target must be provided
+    if (calledUser && botName) {
+      await interaction.reply({
+        content: 'Provide either a player or an AI bot to call out, not both.',
+        ephemeral: true,
+      });
+      return;
+    }
+
+    if (!calledUser && !botName) {
+      await interaction.reply({
+        content: 'Provide the player or the AI bot you want to call out.',
+        ephemeral: true,
+      });
+      return;
+    }
 
     // Find the active game in this channel or its game thread
     const activeGame = gameManager.findGameByChannel(guildId, channelId, { status: 'playing' });
@@ -42,12 +65,25 @@ module.exports = {
       return;
     }
 
-    // Find the called player in the game
-    const calledPlayerObj = allPlayers.find(p => p.id === calledPlayer.id);
+    // Find the called player in the game: a Discord user by id, or an AI
+    // bot by name (case-insensitive)
+    let calledPlayerObj;
+    let calledDisplay;
+    if (calledUser) {
+      calledPlayerObj = allPlayers.find(p => p.id === calledUser.id);
+      calledDisplay = calledUser.tag;
+    } else {
+      calledPlayerObj = allPlayers.find(
+        p => p.type === 'ai' && p.name && p.name.toLowerCase() === botName.toLowerCase()
+      );
+      calledDisplay = botName;
+    }
 
     if (!calledPlayerObj) {
       await interaction.reply({
-        content: `That player is not in this game.`,
+        content: calledUser
+          ? 'That player is not in this game.'
+          : `There is no AI bot named "${botName}" in this game.`,
         ephemeral: true,
       });
       return;
@@ -56,7 +92,7 @@ module.exports = {
     // Check if the called player has exactly 1 card and hasn't said UNO
     if (!calledPlayerObj.cards || calledPlayerObj.cards.length !== 1) {
       await interaction.reply({
-        content: `${calledPlayer.tag} does not have exactly 1 card, so they don't need to say UNO.`,
+        content: `${calledDisplay} does not have exactly 1 card, so they don't need to say UNO.`,
         ephemeral: true,
       });
       return;
@@ -64,7 +100,7 @@ module.exports = {
 
     if (calledPlayerObj.saidUno) {
       await interaction.reply({
-        content: `${calledPlayer.tag} already said UNO!`,
+        content: `${calledDisplay} already said UNO!`,
         ephemeral: true,
       });
       return;
@@ -100,15 +136,16 @@ module.exports = {
     }
 
     // Track statistics: the caller made a successful callout and the called
-    // player was caught and picked up penalty cards
+    // player was caught and picked up penalty cards. AI targets are skipped
+    // by recordCallout itself.
     stats.recordCallout(userId, calledPlayerObj, penaltyDrawn);
 
     const embed = new EmbedBuilder()
       .setColor('#FF0000')
       .setTitle('🚨 UNO Called Out!')
-      .setDescription(`${calledPlayer.tag} forgot to say UNO and was called out by ${interaction.user.tag}!`)
+      .setDescription(`${calledDisplay} forgot to say UNO and was called out by ${interaction.user.tag}!`)
       .addFields(
-        { name: 'Penalty', value: `${calledPlayer.tag} draws 2 cards`, inline: true },
+        { name: 'Penalty', value: `${calledDisplay} draws 2 cards`, inline: true },
         { name: 'Cards Now', value: `${calledPlayerObj.cards.length} cards`, inline: true }
       )
       .setTimestamp();
