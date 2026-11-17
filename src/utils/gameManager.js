@@ -717,7 +717,9 @@ class GameManager {
     const currentPlayer = this.getCurrentPlayer(gameId);
     if (!currentPlayer || currentPlayer.type !== 'human') return null;
 
-    const turnTimeout = game.turnTimeout || config.turnTimeout;
+    // ?? instead of ||: a game-specific value of 0 must be honored as an
+    // immediate expiry, not silently replaced by the configured default
+    const turnTimeout = game.turnTimeout ?? config.turnTimeout;
     if (new Date() - new Date(game.lastAction) < turnTimeout) return null;
 
     // Force the absent player to draw a card, then move on to the next player
