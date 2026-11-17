@@ -264,6 +264,7 @@ When a game starts, the bot creates a dedicated thread for it. Game commands wor
 | `/uno-leave` | Leave your current game (an AI bot takes over your hand if the game is in progress) |
 | `/uno` | Say UNO when you have one card left |
 | `/uno-calluno player:<@player>` | Call out a player who forgot to say UNO |
+| `/uno-calluno bot:<bot name>` | Call out an AI bot who forgot to say UNO |
 | `/uno-info` | Display bot information and license |
 
 #### General Commands
@@ -326,6 +327,13 @@ In team mode, view your teammate Charlie's hand.
 ```
 Call out Bob for forgetting to say UNO (2-card penalty).
 
+#### Calling Out an AI Bot
+
+```
+/uno-calluno bot:Alice
+```
+Call out the AI bot Alice for forgetting to say UNO (2-card penalty). Bots occasionally forget to say UNO; you have until the bot's next turn to catch them.
+
 #### Leaving a Game
 
 ```
@@ -364,7 +372,7 @@ The bot follows standard UNO rules:
 - Unlike official UNO, Wild Draw 4 may be played at any time, even if you hold a matching color (house rule)
 - When a player has one card left, they must say "UNO"
 - If a player forgets to say UNO, the player whose turn it is can call them out with `/uno-calluno` (2-card penalty)
-- AI bots also say UNO; occasionally a bot forgets and can then be called out with `/uno-calluno` before its next turn
+- AI bots also say UNO; occasionally a bot forgets, and the current player can then call it out with `/uno-calluno bot:<name>` before its next turn
 - First player to get rid of all their cards wins!
 
 ## Team Mode
